@@ -68,3 +68,5 @@ cmake-build-debug/
 build.ninja
 rules.ninja
 .ninja_*
+shared_libs/build/
+shared_libs/*.so
