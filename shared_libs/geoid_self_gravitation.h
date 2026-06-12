@@ -123,7 +123,8 @@ namespace aspect
         bool output_surface_topo_contribution_SH_coes;
         bool output_CMB_topo_contribution_SH_coes;
         bool output_surface_dynamic_topography;
-        bool output_CMB_dynamic_topography;   
+        bool output_CMB_dynamic_topography;
+        bool output_CBF_support_stress_coefficients;
 
         bool enable_self_gravitation;
 

@@ -274,6 +274,16 @@ namespace aspect
 
       using AdvectionField = aspect::AdvectionField;
 
+      /**
+       * Return the log context used by the Stokes solver debug fingerprint.
+       */
+      std::string stokes_solver_debug_context () const;
+
+      /**
+       * Whether the diagnostic free-slip geoid branch is currently active.
+       */
+      bool is_free_slip_geoid_branch_active () const;
+
     private:
 
       /**
@@ -437,6 +447,12 @@ namespace aspect
        * <code>source/simulator/core.cc</code>.
        */
       void solve_timestep ();
+
+      bool should_run_free_slip_geoid_branch () const;
+      void advance_free_slip_geoid_branch_target (const double diagnostic_time);
+      void maybe_run_free_slip_geoid_branch ();
+      void run_free_slip_geoid_branch ();
+      void parse_and_apply_free_slip_branch_solver_parameters ();
 
       /**
        * This function implements one scheme for the various
@@ -843,6 +859,11 @@ namespace aspect
        */
       std::pair<double,double>
       solve_stokes (LinearAlgebra::BlockVector &solution_vector);
+
+      /**
+       * Print a compact diagnostic fingerprint of the Stokes solver state.
+       */
+      void print_stokes_solver_debug_state (const std::string &stage) const;
 
       /**
        * This function is called at the end of every time step. It runs all
@@ -2058,6 +2079,9 @@ namespace aspect
       bool                                                      assemble_newton_stokes_matrix;
       bool                                                      assemble_newton_stokes_system;
       bool                                                      rebuild_stokes_preconditioner;
+
+      bool                                                      free_slip_geoid_branch_active;
+      double                                                    next_free_slip_geoid_branch_time;
 
       /**
        * @}

@@ -571,6 +571,20 @@ namespace aspect
     bool                           use_operator_splitting;
     std::string                    world_builder_file;
     unsigned int                   n_particle_managers;
+    bool                           output_stokes_solver_debug_information;
+
+    bool                           free_slip_geoid_branch_enabled;
+    double                         free_slip_geoid_branch_start_time;
+    double                         free_slip_geoid_branch_time_interval;
+    std::string                    free_slip_geoid_branch_solver_parameter_file;
+    std::string                    free_slip_geoid_branch_postprocessors;
+    typename NullspaceRemoval::Kind free_slip_geoid_branch_nullspace_removal;
+    std::string                    free_slip_geoid_branch_boundary_indicators_string;
+    std::set<types::boundary_id>   free_slip_geoid_branch_boundary_indicators;
+    std::string                    free_slip_geoid_branch_output_directory;
+    bool                           free_slip_geoid_branch_include_surface_topography_contribution;
+    bool                           free_slip_geoid_branch_include_CMB_topography_contribution;
+    bool                           free_slip_geoid_branch_output_solver_debug_information;
 
     /**
      * @}

@@ -598,6 +598,15 @@ namespace aspect
                                             assemble_newton_stokes_system,
                                             last_pressure_normalization_adjustment,
                                             solution_vector);
+        if (parameters.output_stokes_solver_debug_information)
+          pcout << "      [stokes debug] context=" << stokes_solver_debug_context()
+                << " stage=\"after matrix-free solve_stokes return\""
+                << " timestep=" << timestep_number
+                << " nonlinear_iteration=" << nonlinear_iteration
+                << " initial_nonlinear_residual=" << outputs.initial_nonlinear_residual
+                << " final_linear_residual=" << outputs.final_linear_residual
+                << " pressure_normalization_adjustment=" << outputs.pressure_normalization_adjustment
+                << std::endl;
       }
     else if (parameters.use_direct_stokes_solver)
       {
@@ -733,6 +742,16 @@ namespace aspect
 
             solver_tolerance = parameters.linear_stokes_solver_tolerance *
                                std::sqrt(velocity_residual*velocity_residual+pressure_residual*pressure_residual);
+            if (parameters.output_stokes_solver_debug_information)
+              pcout << "      [stokes debug] context=" << stokes_solver_debug_context()
+                    << " stage=\"computed Stokes residual and solver tolerance\""
+                    << " timestep=" << timestep_number
+                    << " nonlinear_iteration=" << nonlinear_iteration
+                    << " initial_nonlinear_residual=" << outputs.initial_nonlinear_residual
+                    << " residual_u=" << velocity_residual
+                    << " residual_p=" << pressure_residual
+                    << " solver_tolerance=" << solver_tolerance
+                    << std::endl;
           }
         else
           {
@@ -743,6 +762,16 @@ namespace aspect
             const double pressure_residual = system_rhs.block(pressure_block_index).l2_norm();
             solver_tolerance = parameters.linear_stokes_solver_tolerance *
                                std::sqrt(velocity_residual*velocity_residual+pressure_residual*pressure_residual);
+
+            if (parameters.output_stokes_solver_debug_information)
+              pcout << "      [stokes debug] context=" << stokes_solver_debug_context()
+                    << " stage=\"computed Newton Stokes residual and solver tolerance\""
+                    << " timestep=" << timestep_number
+                    << " nonlinear_iteration=" << nonlinear_iteration
+                    << " residual_u=" << velocity_residual
+                    << " residual_p=" << pressure_residual
+                    << " solver_tolerance=" << solver_tolerance
+                    << std::endl;
 
             // as described in the documentation of the function, the initial
             // nonlinear residual for the Newton method is computed by just
@@ -847,6 +876,14 @@ namespace aspect
                   << " iterations." << std::endl;
 
             outputs.final_linear_residual = solver_control_cheap.last_value();
+            if (parameters.output_stokes_solver_debug_information)
+              pcout << "      [stokes debug] context=" << stokes_solver_debug_context()
+                    << " stage=\"cheap Stokes solver succeeded\""
+                    << " cheap_initial_residual=" << solver_control_cheap.initial_value()
+                    << " cheap_final_residual=" << solver_control_cheap.last_value()
+                    << " cheap_iterations=" << solver_control_cheap.last_step()
+                    << " solver_tolerance=" << solver_tolerance
+                    << std::endl;
           }
 
         // step 1b: take the stronger solver in case
@@ -891,6 +928,17 @@ namespace aspect
                       << " iterations." << std::endl;
 
                 outputs.final_linear_residual = solver_control_expensive.last_value();
+                if (parameters.output_stokes_solver_debug_information)
+                  pcout << "      [stokes debug] context=" << stokes_solver_debug_context()
+                        << " stage=\"expensive Stokes solver succeeded\""
+                        << " cheap_initial_residual=" << solver_control_cheap.initial_value()
+                        << " cheap_final_residual=" << solver_control_cheap.last_value()
+                        << " cheap_iterations=" << solver_control_cheap.last_step()
+                        << " expensive_initial_residual=" << solver_control_expensive.initial_value()
+                        << " expensive_final_residual=" << solver_control_expensive.last_value()
+                        << " expensive_iterations=" << solver_control_expensive.last_step()
+                        << " solver_tolerance=" << solver_tolerance
+                        << std::endl;
               }
             // if the solver fails, report the error from processor 0 with some additional
             // information about its location, and throw a quiet exception on all other
@@ -909,6 +957,19 @@ namespace aspect
 
                 if (parameters.n_expensive_stokes_solver_steps > 0)
                   solver_controls.push_back(solver_control_expensive);
+
+                if (parameters.output_stokes_solver_debug_information)
+                  pcout << "      [stokes debug] context=" << stokes_solver_debug_context()
+                        << " stage=\"Stokes solver failure\""
+                        << " cheap_initial_residual=" << solver_control_cheap.initial_value()
+                        << " cheap_final_residual=" << solver_control_cheap.last_value()
+                        << " cheap_iterations=" << solver_control_cheap.last_step()
+                        << " expensive_initial_residual=" << solver_control_expensive.initial_value()
+                        << " expensive_final_residual=" << solver_control_expensive.last_value()
+                        << " expensive_iterations=" << solver_control_expensive.last_step()
+                        << " solver_tolerance=" << solver_tolerance
+                        << " solver_history_path=" << parameters.output_directory+"solver_history.txt"
+                        << std::endl;
 
                 // Exit with an exception that describes the underlying cause:
                 Utilities::throw_linear_solver_failure_exception("iterative Stokes solver",
@@ -938,11 +999,17 @@ namespace aspect
                                    solver_control_cheap,
                                    solver_control_expensive);
 
+        print_stokes_solver_debug_state("after linear solve before remove_nullspace");
+
         // do some cleanup now that we have the solution
         remove_nullspace(solution_vector, distributed_stokes_solution);
 
+        print_stokes_solver_debug_state("after remove_nullspace before pressure normalization");
+
         if (assemble_newton_stokes_system == false)
           outputs.pressure_normalization_adjustment = normalize_pressure(solution_vector);
+
+        print_stokes_solver_debug_state("after pressure normalization");
       }
 
     last_pressure_normalization_adjustment = outputs.pressure_normalization_adjustment;

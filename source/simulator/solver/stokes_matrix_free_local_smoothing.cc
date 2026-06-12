@@ -42,6 +42,8 @@
 #include <deal.II/dofs/dof_handler.h>
 #include <deal.II/dofs/dof_renumbering.h>
 
+#include <sstream>
+
 namespace aspect
 {
 
@@ -1175,6 +1177,14 @@ namespace aspect
 
         solver_tolerance = this->get_parameters().linear_stokes_solver_tolerance *
                            std::sqrt(residual_u*residual_u+residual_p*residual_p);
+        if (this->get_parameters().output_stokes_solver_debug_information)
+          this->get_pcout() << "      [stokes debug] context=" << sim.stokes_solver_debug_context()
+                            << " stage=\"computed Stokes residual and solver tolerance\""
+                            << " initial_nonlinear_residual=" << outputs.initial_nonlinear_residual
+                            << " residual_u=" << residual_u
+                            << " residual_p=" << residual_p
+                            << " solver_tolerance=" << solver_tolerance
+                            << std::endl;
       }
     else
       {
@@ -1185,6 +1195,14 @@ namespace aspect
         const double residual_p = distributed_stokes_rhs.block(1).l2_norm();
         solver_tolerance = this->get_parameters().linear_stokes_solver_tolerance *
                            std::sqrt(residual_u*residual_u+residual_p*residual_p);
+
+        if (this->get_parameters().output_stokes_solver_debug_information)
+          this->get_pcout() << "      [stokes debug] context=" << sim.stokes_solver_debug_context()
+                            << " stage=\"computed Newton Stokes residual and solver tolerance\""
+                            << " residual_u=" << residual_u
+                            << " residual_p=" << residual_p
+                            << " solver_tolerance=" << solver_tolerance
+                            << std::endl;
 
         // as described in the documentation of the function, the initial
         // nonlinear residual for the Newton method is computed by just
@@ -1462,6 +1480,14 @@ namespace aspect
                           << " iterations." << std::endl;
 
         outputs.final_linear_residual = solver_control_cheap.last_value();
+        if (this->get_parameters().output_stokes_solver_debug_information)
+          this->get_pcout() << "      [stokes debug] context=" << sim.stokes_solver_debug_context()
+                            << " stage=\"cheap Stokes solver succeeded\""
+                            << " cheap_initial_residual=" << solver_control_cheap.initial_value()
+                            << " cheap_final_residual=" << solver_control_cheap.last_value()
+                            << " cheap_iterations=" << solver_control_cheap.last_step()
+                            << " solver_tolerance=" << solver_tolerance
+                            << std::endl;
       }
     // step 1b: take the stronger solver in case
     // the simple solver failed and attempt solving
@@ -1506,6 +1532,17 @@ namespace aspect
                               << " iterations." << std::endl;
 
             outputs.final_linear_residual = solver_control_expensive.last_value();
+            if (this->get_parameters().output_stokes_solver_debug_information)
+              this->get_pcout() << "      [stokes debug] context=" << sim.stokes_solver_debug_context()
+                                << " stage=\"expensive Stokes solver succeeded\""
+                                << " cheap_initial_residual=" << solver_control_cheap.initial_value()
+                                << " cheap_final_residual=" << solver_control_cheap.last_value()
+                                << " cheap_iterations=" << solver_control_cheap.last_step()
+                                << " expensive_initial_residual=" << solver_control_expensive.initial_value()
+                                << " expensive_final_residual=" << solver_control_expensive.last_value()
+                                << " expensive_iterations=" << solver_control_expensive.last_step()
+                                << " solver_tolerance=" << solver_tolerance
+                                << std::endl;
           }
         // if the solver fails trigger the post stokes solver signal and throw an exception
         catch (const std::exception &exc)
@@ -1521,6 +1558,19 @@ namespace aspect
               solver_controls.push_back(solver_control_cheap);
             if (this->get_parameters().n_expensive_stokes_solver_steps > 0)
               solver_controls.push_back(solver_control_expensive);
+
+            if (this->get_parameters().output_stokes_solver_debug_information)
+              this->get_pcout() << "      [stokes debug] context=" << sim.stokes_solver_debug_context()
+                                << " stage=\"Stokes solver failure\""
+                                << " cheap_initial_residual=" << solver_control_cheap.initial_value()
+                                << " cheap_final_residual=" << solver_control_cheap.last_value()
+                                << " cheap_iterations=" << solver_control_cheap.last_step()
+                                << " expensive_initial_residual=" << solver_control_expensive.initial_value()
+                                << " expensive_final_residual=" << solver_control_expensive.last_value()
+                                << " expensive_iterations=" << solver_control_expensive.last_step()
+                                << " solver_tolerance=" << solver_tolerance
+                                << " solver_history_path=" << this->get_parameters().output_directory+"solver_history.txt"
+                                << std::endl;
 
             Utilities::throw_linear_solver_failure_exception("iterative Stokes solver",
                                                              "StokesMatrixFreeHandlerLocalSmoothingImplementation::solve",
@@ -1585,6 +1635,13 @@ namespace aspect
   template <int dim, int velocity_degree>
   void StokesMatrixFreeHandlerLocalSmoothingImplementation<dim, velocity_degree>::setup_dofs()
   {
+    ++setup_dofs_call_count;
+    if (this->get_parameters().output_stokes_solver_debug_information)
+      this->get_pcout() << "      [stokes debug] context=" << sim.stokes_solver_debug_context()
+                        << " stage=\"setup_dofs begin\""
+                        << " setup_dofs_call_count=" << setup_dofs_call_count
+                        << " levels=" << this->get_triangulation().n_global_levels()
+                        << std::endl;
     // Periodic boundary conditions with hanging nodes on the boundary currently
     // cause the GMG not to converge. We catch this case early to provide the
     // user with a reasonable error message:
@@ -1611,6 +1668,28 @@ namespace aspect
 
     // This vector will be refilled with the new MatrixFree objects below:
     matrix_free_objects.clear();
+
+    const auto branch_free_slip_boundary_indicators = [&]()
+    {
+      if (sim.is_free_slip_geoid_branch_active())
+        return this->get_parameters().free_slip_geoid_branch_boundary_indicators;
+      return std::set<types::boundary_id>();
+    }();
+
+    const auto boundary_set_to_string = [] (const std::set<types::boundary_id> &boundary_ids)
+    {
+      std::ostringstream stream;
+      for (const auto boundary_id : boundary_ids)
+        stream << ' ' << boundary_id;
+      return stream.str();
+    };
+
+    if (this->get_parameters().output_stokes_solver_debug_information)
+      this->get_pcout() << "      [stokes debug] context=" << sim.stokes_solver_debug_context()
+                        << " stage=\"matrix-free branch boundary override\""
+                        << " active=" << (sim.is_free_slip_geoid_branch_active() ? "true" : "false")
+                        << " branch_free_slip_boundaries=" << boundary_set_to_string(branch_free_slip_boundary_indicators)
+                        << std::endl;
 
     // Set up velocity DoFHandler
     {
@@ -1641,10 +1720,15 @@ namespace aspect
 
       if (!this->get_parameters().mesh_deformation_enabled)
         {
+          std::set<types::boundary_id> no_flux_boundaries
+            = this->get_boundary_velocity_manager().get_tangential_boundary_velocity_indicators();
+          no_flux_boundaries.insert(branch_free_slip_boundary_indicators.begin(),
+                                    branch_free_slip_boundary_indicators.end());
+
           VectorTools::compute_no_normal_flux_constraints(dof_handler_v,
                                                           /* first_vector_component= */
                                                           0,
-                                                          this->get_boundary_velocity_manager().get_tangential_boundary_velocity_indicators(),
+                                                          no_flux_boundaries,
                                                           constraints_v,
                                                           this->get_mapping(),
                                                           /* use_manifold_for_normal= */
@@ -1730,6 +1814,10 @@ namespace aspect
       std::set<types::boundary_id> dirichlet_boundaries = this->get_boundary_velocity_manager().get_zero_boundary_velocity_indicators();
       for (const auto boundary_id: this->get_boundary_velocity_manager().get_prescribed_boundary_velocity_indicators())
         {
+          if (branch_free_slip_boundary_indicators.find(boundary_id)
+              != branch_free_slip_boundary_indicators.end())
+            continue;
+
           const ComponentMask component_mask = this->get_boundary_velocity_manager().get_component_mask(boundary_id);
 
           if (component_mask != ComponentMask(this->introspection().n_components, false))
@@ -1747,6 +1835,18 @@ namespace aspect
               dirichlet_boundaries.insert(boundary_id);
             }
         }
+
+      for (const auto boundary_id : branch_free_slip_boundary_indicators)
+        dirichlet_boundaries.erase(boundary_id);
+
+      if (this->get_parameters().output_stokes_solver_debug_information)
+        this->get_pcout() << "      [stokes debug] context=" << sim.stokes_solver_debug_context()
+                          << " stage=\"matrix-free GMG boundary sets\""
+                          << " dirichlet_boundaries=" << boundary_set_to_string(dirichlet_boundaries)
+                          << " tangential_boundaries="
+                          << boundary_set_to_string(this->get_boundary_velocity_manager().get_tangential_boundary_velocity_indicators())
+                          << " branch_free_slip_boundaries=" << boundary_set_to_string(branch_free_slip_boundary_indicators)
+                          << std::endl;
 
       // Unconditionally call this function, even if the set is empty. Otherwise, the data structure
       // for boundary indices will not be created (if mesh has no Dirichlet conditions).
@@ -1784,6 +1884,14 @@ namespace aspect
 
       matrix_free->reinit(this->get_mapping(), stokes_dofs, stokes_constraints,
                           QGauss<1>(this->get_parameters().stokes_velocity_degree+1), additional_data);
+      if (this->get_parameters().output_stokes_solver_debug_information)
+        this->get_pcout() << "      [stokes debug] context=" << sim.stokes_solver_debug_context()
+                          << " stage=\"active MatrixFree setup\""
+                          << " setup_dofs_call_count=" << setup_dofs_call_count
+                          << " constraints_v=" << constraints_v.n_constraints()
+                          << " constraints_p=" << constraints_p.n_constraints()
+                          << " cell_batches=" << matrix_free->n_cell_batches()
+                          << std::endl;
     }
 
     // Stokes matrix
@@ -1849,8 +1957,10 @@ namespace aspect
 #endif
             level_constraints_v.close();
 
-            const std::set<types::boundary_id> &no_flux_boundaries
+            std::set<types::boundary_id> no_flux_boundaries
               = this->get_boundary_velocity_manager().get_tangential_boundary_velocity_indicators();
+            no_flux_boundaries.insert(branch_free_slip_boundary_indicators.begin(),
+                                      branch_free_slip_boundary_indicators.end());
             if (!no_flux_boundaries.empty())
               {
                 AffineConstraints<double> user_level_constraints;
@@ -1949,6 +2059,15 @@ namespace aspect
                                       stokes_constraints,
                                       QGauss<1>(this->get_parameters().stokes_velocity_degree+1),
                                       additional_data);
+            if (this->get_parameters().output_stokes_solver_debug_information)
+              this->get_pcout() << "      [stokes debug] context=" << sim.stokes_solver_debug_context()
+                                << " stage=\"level MatrixFree setup\""
+                                << " setup_dofs_call_count=" << setup_dofs_call_count
+                                << " level=" << level
+                                << " constraints_v=" << level_constraints_v.n_constraints()
+                                << " constraints_p=" << level_constraints_p.n_constraints()
+                                << " cell_batches=" << matrix_free_level->n_cell_batches()
+                                << std::endl;
           }
           {
             mg_matrices_A_block[level].clear();
@@ -1977,6 +2096,13 @@ namespace aspect
     mg_transfer_Schur_complement.clear();
     mg_transfer_Schur_complement.initialize_constraints(mg_constrained_dofs_Schur_complement);
     mg_transfer_Schur_complement.build(dof_handler_p);
+
+    if (this->get_parameters().output_stokes_solver_debug_information)
+      this->get_pcout() << "      [stokes debug] context=" << sim.stokes_solver_debug_context()
+                        << " stage=\"setup_dofs end\""
+                        << " setup_dofs_call_count=" << setup_dofs_call_count
+                        << " levels=" << this->get_triangulation().n_global_levels()
+                        << std::endl;
   }
 
 
@@ -1984,15 +2110,37 @@ namespace aspect
   template <int dim, int velocity_degree>
   void StokesMatrixFreeHandlerLocalSmoothingImplementation<dim, velocity_degree>::build_preconditioner()
   {
+    ++build_preconditioner_call_count;
+    if (this->get_parameters().output_stokes_solver_debug_information)
+      this->get_pcout() << "      [stokes debug] context=" << sim.stokes_solver_debug_context()
+                        << " stage=\"build_preconditioner begin\""
+                        << " build_preconditioner_call_count=" << build_preconditioner_call_count
+                        << " levels=" << this->get_triangulation().n_global_levels()
+                        << std::endl;
+
     this->get_computing_timer().enter_subsection("Build Stokes preconditioner");
 
     for (unsigned int level=0; level < this->get_triangulation().n_global_levels(); ++level)
       {
         mg_matrices_Schur_complement[level].compute_diagonal();
         mg_matrices_A_block[level].compute_diagonal();
+        if (this->get_parameters().output_stokes_solver_debug_information)
+          this->get_pcout() << "      [stokes debug] context=" << sim.stokes_solver_debug_context()
+                            << " stage=\"level preconditioner diagonal recomputed\""
+                            << " build_preconditioner_call_count=" << build_preconditioner_call_count
+                            << " level=" << level
+                            << " A_block_diagonal=recomputed"
+                            << " Schur_diagonal=recomputed"
+                            << std::endl;
       }
 
     this->get_computing_timer().leave_subsection("Build Stokes preconditioner");
+
+    if (this->get_parameters().output_stokes_solver_debug_information)
+      this->get_pcout() << "      [stokes debug] context=" << sim.stokes_solver_debug_context()
+                        << " stage=\"build_preconditioner end\""
+                        << " build_preconditioner_call_count=" << build_preconditioner_call_count
+                        << std::endl;
   }
 
 

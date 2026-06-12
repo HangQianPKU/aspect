@@ -502,20 +502,26 @@ namespace aspect
           }
       }
 
+    print_stokes_solver_debug_state("before assemble_stokes_system");
+
     // Re-compute the pressure scaling factor for the Stokes assembly
     pressure_scaling = compute_pressure_scaling_factor();
     assemble_stokes_system ();
+    print_stokes_solver_debug_state("after assemble_stokes_system");
 
     // build the preconditioner
     if (stokes_matrix_free)
       stokes_matrix_free->build_preconditioner();
     else
       build_stokes_preconditioner();
+    print_stokes_solver_debug_state("after build_stokes_preconditioner");
 
     if (nonlinear_residual)
       *nonlinear_residual = compute_initial_stokes_residual();
 
+    print_stokes_solver_debug_state("before solve_stokes");
     const double current_nonlinear_residual = solve_stokes(solution).first;
+    print_stokes_solver_debug_state("after solve_stokes before updating current_linearization_point");
 
     current_linearization_point.block(introspection.block_indices.velocities)
       = solution.block(introspection.block_indices.velocities);
@@ -533,6 +539,8 @@ namespace aspect
         current_linearization_point.block(fluid_velocity_block) = solution.block(fluid_velocity_block);
         current_linearization_point.block(fluid_pressure_block) = solution.block(fluid_pressure_block);
       }
+
+    print_stokes_solver_debug_state("after updating current_linearization_point");
 
     if (initial_nonlinear_residual > 0)
       return current_nonlinear_residual / initial_nonlinear_residual;

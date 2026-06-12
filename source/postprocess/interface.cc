@@ -113,6 +113,69 @@ namespace aspect
     }
 
 
+
+
+    template <int dim>
+    std::list<std::pair<std::string,std::string>>
+    Manager<dim>::execute (TableHandler &statistics,
+                           const std::vector<std::string> &names)
+    {
+      std::vector<std::string> requested_names = names;
+
+      for (unsigned int i=0; i<requested_names.size(); ++i)
+        {
+          const std::vector<std::string>::const_iterator active_name
+            = std::find(this->plugin_names.begin(), this->plugin_names.end(), requested_names[i]);
+
+          AssertThrow(active_name != this->plugin_names.end(),
+                      ExcMessage("The requested postprocessor <" + requested_names[i]
+                                 + "> is not active. Add it to Postprocess/List of postprocessors "
+                                 "so it can be constructed, or remove it from the branch-only list."));
+
+          typename std::list<std::unique_ptr<Interface<dim>>>::const_iterator plugin =
+            this->plugin_objects.begin();
+          std::advance(plugin, std::distance(this->plugin_names.cbegin(), active_name));
+
+          const std::list<std::string> dependencies = (*plugin)->required_other_postprocessors();
+          for (const std::string &dependency : dependencies)
+            if (std::find(requested_names.begin(), requested_names.end(), dependency)
+                == requested_names.end())
+              requested_names.push_back(dependency);
+        }
+
+      std::list<std::pair<std::string,std::string>> output_list;
+      typename std::list<std::unique_ptr<Interface<dim>>>::iterator plugin =
+        this->plugin_objects.begin();
+
+      for (unsigned int i=0; i<this->plugin_names.size(); ++i, ++plugin)
+        if (std::find(requested_names.begin(), requested_names.end(), this->plugin_names[i])
+            != requested_names.end())
+          {
+            (*plugin)->update();
+            std::pair<std::string,std::string> output = (*plugin)->execute(statistics);
+            if (output.first.size() + output.second.size() > 0)
+              output_list.push_back(output);
+          }
+
+      return output_list;
+    }
+
+
+
+    template <int dim>
+    std::list<std::pair<std::string,std::string>>
+    Manager<dim>::execute_except (TableHandler &statistics,
+                                  const std::vector<std::string> &names)
+    {
+      std::vector<std::string> selected_names;
+      for (const std::string &name : this->plugin_names)
+        if (std::find(names.begin(), names.end(), name) == names.end())
+          selected_names.push_back(name);
+
+      return execute(statistics, selected_names);
+    }
+
+
 // -------------------------------- Deal with registering postprocessors and automating
 // -------------------------------- their setup and selection at run time
 

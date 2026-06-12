@@ -79,6 +79,71 @@ namespace aspect
 {
   namespace
   {
+    std::string trim_free_slip_branch_parameter_line(const std::string &input)
+    {
+      const std::string whitespace = " \t\r\n";
+      const std::string::size_type begin = input.find_first_not_of(whitespace);
+      if (begin == std::string::npos)
+        return "";
+      const std::string::size_type end = input.find_last_not_of(whitespace);
+      return input.substr(begin, end-begin+1);
+    }
+
+
+
+    std::string strip_free_slip_branch_comment(const std::string &input)
+    {
+      bool in_angle_brackets = false;
+      for (std::string::size_type i=0; i<input.size(); ++i)
+        {
+          if (input[i] == '<')
+            in_angle_brackets = true;
+          else if (input[i] == '>')
+            in_angle_brackets = false;
+          else if (input[i] == '#' && !in_angle_brackets)
+            return input.substr(0, i);
+        }
+      return input;
+    }
+
+
+
+    bool free_slip_branch_string_to_bool(const std::string &value)
+    {
+      if (value == "true")
+        return true;
+      if (value == "false")
+        return false;
+
+      AssertThrow(false, ExcMessage("Expected a boolean value ('true' or 'false') in the "
+                                    "free-slip geoid branch solver parameter file, but got <"
+                                    + value + ">."));
+      return false;
+    }
+
+
+
+    bool free_slip_branch_path_is_absolute(const std::string &path)
+    {
+      return !path.empty() && path[0] == '/';
+    }
+
+
+
+    std::string free_slip_branch_output_directory(const std::string &main_output_directory,
+                                                  const std::string &branch_output_directory)
+    {
+      AssertThrow(!branch_output_directory.empty(),
+                  ExcMessage("The free-slip geoid branch output directory must not be empty."));
+
+      if (free_slip_branch_path_is_absolute(branch_output_directory))
+        return branch_output_directory + "/";
+
+      return main_output_directory + branch_output_directory + "/";
+    }
+
+
+
     /**
      * Helper function to construct the final std::vector of FEVariable before
      * it is used to construct the Introspection object. Create the default
@@ -253,7 +318,9 @@ namespace aspect
                                    true
                                    :
                                    false),
-    rebuild_stokes_preconditioner (true)
+    rebuild_stokes_preconditioner (true),
+    free_slip_geoid_branch_active (false),
+    next_free_slip_geoid_branch_time (parameters.free_slip_geoid_branch_start_time)
   {
     wall_timer.start();
 
@@ -856,6 +923,8 @@ namespace aspect
 #endif
     current_constraints.close();
 
+    print_stokes_solver_debug_state("after compute_current_constraints");
+
     // TODO: We should use current_constraints.is_consistent_in_parallel()
     // here to assert that our constraints are consistent between
     // processors. This got removed in
@@ -1441,9 +1510,25 @@ namespace aspect
                                                          false);
       }
 
+    if (free_slip_geoid_branch_active && !parameters.free_slip_geoid_branch_boundary_indicators.empty())
+      {
+        signals.pre_compute_no_normal_flux_constraints(triangulation);
+        VectorTools::compute_no_normal_flux_constraints(dof_handler,
+                                                        introspection.component_indices.velocities[0],
+                                                        parameters.free_slip_geoid_branch_boundary_indicators,
+                                                        constraints,
+                                                        *mapping,
+                                                        true);
+      }
+
     // Compute constraints for prescribed velocity boundaries for each boundary
     for (const auto boundary_id: boundary_velocity_manager.get_prescribed_boundary_velocity_indicators())
       {
+        if (free_slip_geoid_branch_active
+            && parameters.free_slip_geoid_branch_boundary_indicators.find(boundary_id)
+               != parameters.free_slip_geoid_branch_boundary_indicators.end())
+          continue;
+
         Utilities::VectorFunctionFromVelocityFunctionObject<dim> vel
         (introspection.n_components,
          [&] (const dealii::Point<dim> &x) -> Tensor<1,dim>
@@ -1464,6 +1549,128 @@ namespace aspect
                                                   boundary_velocity_manager.get_component_mask(boundary_id));
       }
   }
+
+
+
+
+
+  template <int dim>
+  std::string
+  Simulator<dim>::stokes_solver_debug_context () const
+  {
+    if (free_slip_geoid_branch_active)
+      return "free-slip-branch";
+    if (parameters.resume_computation)
+      return "restart";
+    return "main";
+  }
+
+
+
+
+
+  template <int dim>
+  bool
+  Simulator<dim>::is_free_slip_geoid_branch_active () const
+  {
+    return free_slip_geoid_branch_active;
+  }
+
+
+  template <int dim>
+  void
+  Simulator<dim>::print_stokes_solver_debug_state (const std::string &stage) const
+  {
+    if (!parameters.output_stokes_solver_debug_information)
+      return;
+
+    const auto stokes_solver_name = [&]() -> std::string
+    {
+      switch (parameters.stokes_solver_type)
+        {
+          case Parameters<dim>::StokesSolverType::block_amg:
+            return "block AMG";
+          case Parameters<dim>::StokesSolverType::direct_solver:
+            return "direct solver";
+          case Parameters<dim>::StokesSolverType::block_gmg:
+            return "block GMG";
+          case Parameters<dim>::StokesSolverType::default_solver:
+            return "default solver";
+        }
+      return "unknown";
+    };
+
+    const auto stokes_gmg_name = [&]() -> std::string
+    {
+      switch (parameters.stokes_gmg_type)
+        {
+          case Parameters<dim>::StokesGMGType::local_smoothing:
+            return "local smoothing";
+          case Parameters<dim>::StokesGMGType::global_coarsening:
+            return "global coarsening";
+        }
+      return "unknown";
+    };
+
+    pcout << "      [stokes debug] context=" << stokes_solver_debug_context()
+          << " stage=\"" << stage << "\""
+          << " timestep=" << timestep_number
+          << " time=" << time
+          << " nonlinear_iteration=" << nonlinear_iteration << '\n'
+          << "        cells=" << triangulation.n_global_active_cells()
+          << " levels=" << triangulation.n_global_levels()
+          << " dofs=" << dof_handler.n_dofs()
+          << " block_dofs=";
+    for (unsigned int b=0; b<introspection.system_dofs_per_block.size(); ++b)
+      pcout << (b == 0 ? "" : "+") << introspection.system_dofs_per_block[b];
+    pcout << '\n'
+          << "        constraints=" << constraints.n_constraints()
+          << " current_constraints=" << current_constraints.n_constraints() << '\n'
+          << "        rebuild_sparsity_and_matrices=" << (rebuild_sparsity_and_matrices ? "true" : "false")
+          << " rebuild_stokes_matrix=" << (rebuild_stokes_matrix ? "true" : "false")
+          << " rebuild_stokes_preconditioner=" << (rebuild_stokes_preconditioner ? "true" : "false")
+          << " stokes_matrix_free=" << (stokes_matrix_free ? "true" : "false") << '\n'
+          << "        stokes_solver_type=" << stokes_solver_name()
+          << " stokes_gmg_type=" << stokes_gmg_name()
+          << " pressure_scaling=" << pressure_scaling
+          << " last_pressure_normalization_adjustment=" << last_pressure_normalization_adjustment << '\n'
+          << "        linear_solver_tolerance=" << parameters.linear_stokes_solver_tolerance
+          << " cheap_steps=" << parameters.n_cheap_stokes_solver_steps
+          << " expensive_steps=" << parameters.n_expensive_stokes_solver_steps
+          << " gmres_restart_length=" << parameters.stokes_gmres_restart_length << '\n';
+
+    const unsigned int velocity_block = introspection.block_indices.velocities;
+    const unsigned int pressure_block = introspection.block_indices.pressure;
+
+    const auto print_vector_stats = [&] (const std::string &name,
+                                         const LinearAlgebra::BlockVector &vector)
+    {
+      if (vector.n_blocks() <= std::max(velocity_block, pressure_block))
+        {
+          pcout << "        " << name << " unavailable" << '\n';
+          return;
+        }
+
+      LinearAlgebra::BlockVector distributed_vector(introspection.index_sets.system_partitioning,
+                                                    mpi_communicator);
+      distributed_vector = vector;
+
+      pcout << "        " << name
+            << " velocity_l2=" << distributed_vector.block(velocity_block).l2_norm()
+            << " velocity_linf=" << distributed_vector.block(velocity_block).linfty_norm()
+            << " pressure_l2=" << distributed_vector.block(pressure_block).l2_norm()
+            << " pressure_linf=" << distributed_vector.block(pressure_block).linfty_norm()
+            << " pressure_mean=" << distributed_vector.block(pressure_block).mean_value()
+            << '\n';
+    };
+
+    print_vector_stats("solution", solution);
+    print_vector_stats("old_solution", old_solution);
+    print_vector_stats("old_old_solution", old_old_solution);
+    print_vector_stats("current_linearization_point", current_linearization_point);
+    pcout << std::flush;
+  }
+
 
 
   template <int dim>
@@ -1582,6 +1789,8 @@ namespace aspect
     if (stokes_matrix_free)
       stokes_matrix_free->setup_dofs();
 
+    print_stokes_solver_debug_state("after setup_dofs");
+
     computing_timer.leave_subsection("Setup dof systems");
   }
 
@@ -1660,8 +1869,12 @@ namespace aspect
 
     // run all the postprocessing routines and then write
     // the current state of the statistics table to a file
+    const std::vector<std::string> branch_only_postprocessors =
+      Utilities::split_string_list(parameters.free_slip_geoid_branch_postprocessors);
     std::list<std::pair<std::string,std::string>>
-    output_list = postprocess_manager.execute (statistics);
+    output_list = parameters.free_slip_geoid_branch_enabled
+                  ? postprocess_manager.execute_except (statistics, branch_only_postprocessors)
+                  : postprocess_manager.execute (statistics);
 
     // if we are on processor zero, print to screen
     // whatever the postprocessors have generated
@@ -1692,6 +1905,392 @@ namespace aspect
 
     computing_timer.leave_subsection("Postprocessing");
   }
+
+
+  template <int dim>
+  bool
+  Simulator<dim>::should_run_free_slip_geoid_branch () const
+  {
+    if (!parameters.free_slip_geoid_branch_enabled
+        || parameters.free_slip_geoid_branch_time_interval <= 0.0
+        || time_step <= 0.0)
+      return false;
+
+    const double diagnostic_time = time;
+    return diagnostic_time >= next_free_slip_geoid_branch_time;
+  }
+
+
+
+  template <int dim>
+  void
+  Simulator<dim>::advance_free_slip_geoid_branch_target (const double diagnostic_time)
+  {
+    while (next_free_slip_geoid_branch_time <= diagnostic_time)
+      next_free_slip_geoid_branch_time += parameters.free_slip_geoid_branch_time_interval;
+  }
+
+
+
+  template <int dim>
+  void
+  Simulator<dim>::maybe_run_free_slip_geoid_branch ()
+  {
+    if (!should_run_free_slip_geoid_branch())
+      return;
+
+    const double diagnostic_time = time;
+    run_free_slip_geoid_branch();
+    advance_free_slip_geoid_branch_target(diagnostic_time);
+  }
+
+
+
+  template <int dim>
+  void
+  Simulator<dim>::parse_and_apply_free_slip_branch_solver_parameters ()
+  {
+    const std::string filename = parameters.free_slip_geoid_branch_solver_parameter_file;
+    if (filename.empty())
+      return;
+
+    std::ifstream input(filename.c_str());
+    AssertThrow(input, ExcMessage("Could not open the free-slip geoid branch solver parameter file <"
+                                  + filename + ">. Use an absolute path, or a path relative to "
+                                  "the directory from which ASPECT is launched."));
+
+    std::vector<std::string> subsection_stack;
+    std::string line;
+    unsigned int line_number = 0;
+    while (std::getline(input, line))
+      {
+        ++line_number;
+        line = trim_free_slip_branch_parameter_line(strip_free_slip_branch_comment(line));
+        if (line.empty())
+          continue;
+
+        if (line.compare(0, 10, "subsection") == 0)
+          {
+            subsection_stack.push_back(trim_free_slip_branch_parameter_line(line.substr(10)));
+            continue;
+          }
+
+        if (line == "end")
+          {
+            AssertThrow(!subsection_stack.empty(),
+                        ExcMessage("Unexpected 'end' in free-slip geoid branch solver parameter file <"
+                                   + filename + "> at line " + Utilities::int_to_string(line_number) + "."));
+            subsection_stack.pop_back();
+            continue;
+          }
+
+        AssertThrow(line.compare(0, 3, "set") == 0,
+                    ExcMessage("Only 'subsection', 'end', and 'set' lines are allowed in the "
+                               "free-slip geoid branch solver parameter file <" + filename
+                               + ">. Offending line: " + Utilities::int_to_string(line_number) + "."));
+
+        const std::string assignment = trim_free_slip_branch_parameter_line(line.substr(3));
+        const std::string::size_type equal_position = assignment.find('=');
+        AssertThrow(equal_position != std::string::npos,
+                    ExcMessage("Expected 'set name = value' in free-slip geoid branch solver "
+                               "parameter file <" + filename + "> at line "
+                               + Utilities::int_to_string(line_number) + "."));
+
+        const std::string key = trim_free_slip_branch_parameter_line(assignment.substr(0, equal_position));
+        const std::string value = trim_free_slip_branch_parameter_line(assignment.substr(equal_position+1));
+
+        std::string path;
+        for (const std::string &subsection : subsection_stack)
+          path += subsection + "/";
+        path += key;
+
+        if (path == "Max nonlinear iterations")
+          parameters.max_nonlinear_iterations = Utilities::string_to_int(value);
+        else if (path == "Nonlinear solver tolerance")
+          parameters.nonlinear_tolerance = Utilities::string_to_double(value);
+        else if (path == "Solver parameters/Stokes solver parameters/Linear solver tolerance")
+          parameters.linear_stokes_solver_tolerance = Utilities::string_to_double(value);
+        else if (path == "Solver parameters/Stokes solver parameters/Number of cheap Stokes solver steps")
+          parameters.n_cheap_stokes_solver_steps = Utilities::string_to_int(value);
+        else if (path == "Solver parameters/Stokes solver parameters/Maximum number of expensive Stokes solver steps")
+          parameters.n_expensive_stokes_solver_steps = Utilities::string_to_int(value);
+        else if (path == "Solver parameters/Stokes solver parameters/GMRES solver restart length")
+          parameters.stokes_gmres_restart_length = Utilities::string_to_int(value);
+        else if (path == "Solver parameters/Stokes solver parameters/Linear solver A block tolerance")
+          parameters.linear_solver_A_block_tolerance = Utilities::string_to_double(value);
+        else if (path == "Solver parameters/Stokes solver parameters/Use full A block as preconditioner")
+          parameters.use_full_A_block_preconditioner = free_slip_branch_string_to_bool(value);
+        else if (path == "Solver parameters/Stokes solver parameters/Force nonsymmetric A block solver")
+          parameters.force_nonsymmetric_A_block_solver = free_slip_branch_string_to_bool(value);
+        else if (path == "Solver parameters/Stokes solver parameters/Linear solver S block tolerance")
+          parameters.linear_solver_S_block_tolerance = Utilities::string_to_double(value);
+        else if (path == "Solver parameters/Stokes solver parameters/Krylov method for cheap solver steps")
+          parameters.stokes_krylov_type = Parameters<dim>::StokesKrylovType::parse(value);
+        else if (path == "Solver parameters/Stokes solver parameters/IDR(s) parameter")
+          parameters.idr_s_parameter = Utilities::string_to_int(value);
+        else if (path == "Solver parameters/AMG parameters/AMG smoother type")
+          parameters.AMG_smoother_type = value;
+        else if (path == "Solver parameters/AMG parameters/AMG smoother sweeps")
+          parameters.AMG_smoother_sweeps = Utilities::string_to_int(value);
+        else if (path == "Solver parameters/AMG parameters/AMG aggregation threshold")
+          parameters.AMG_aggregation_threshold = Utilities::string_to_double(value);
+        else if (path == "Solver parameters/AMG parameters/AMG output details")
+          parameters.AMG_output_details = free_slip_branch_string_to_bool(value);
+        else
+          AssertThrow(false, ExcMessage("The free-slip geoid branch solver parameter file <" + filename
+                                        + "> contains the unsupported parameter path <" + path
+                                        + "> at line " + Utilities::int_to_string(line_number)
+                                        + ". Only the documented nonlinear, Stokes, and AMG solver "
+                                        "scalar overrides are allowed."));
+      }
+
+    AssertThrow(subsection_stack.empty(),
+                ExcMessage("The free-slip geoid branch solver parameter file <" + filename
+                           + "> ended before all subsections were closed."));
+  }
+
+
+
+  template <int dim>
+  void
+  Simulator<dim>::run_free_slip_geoid_branch ()
+  {
+    struct SavedBranchState
+    {
+      LinearAlgebra::BlockVector solution;
+      LinearAlgebra::BlockVector old_solution;
+      LinearAlgebra::BlockVector old_old_solution;
+      LinearAlgebra::BlockVector current_linearization_point;
+      AffineConstraints<double> current_constraints;
+      TableHandler statistics;
+      double time;
+      double last_pressure_normalization_adjustment;
+      unsigned int nonlinear_iteration;
+      bool rebuild_sparsity_and_matrices;
+      bool rebuild_stokes_matrix;
+      bool rebuild_stokes_preconditioner;
+      std::string output_directory;
+      unsigned int max_nonlinear_iterations;
+      double nonlinear_tolerance;
+      double linear_stokes_solver_tolerance;
+      unsigned int n_cheap_stokes_solver_steps;
+      unsigned int n_expensive_stokes_solver_steps;
+      unsigned int stokes_gmres_restart_length;
+      double linear_solver_A_block_tolerance;
+      bool use_full_A_block_preconditioner;
+      bool force_nonsymmetric_A_block_solver;
+      double linear_solver_S_block_tolerance;
+      typename Parameters<dim>::StokesKrylovType::Kind stokes_krylov_type;
+      unsigned int idr_s_parameter;
+      std::string AMG_smoother_type;
+      unsigned int AMG_smoother_sweeps;
+      double AMG_aggregation_threshold;
+      bool AMG_output_details;
+      typename NullspaceRemoval::Kind nullspace_removal;
+      bool output_stokes_solver_debug_information;
+    };
+
+    SavedBranchState saved_state;
+    saved_state.solution = solution;
+    saved_state.old_solution = old_solution;
+    saved_state.old_old_solution = old_old_solution;
+    saved_state.current_linearization_point = current_linearization_point;
+    saved_state.current_constraints.reinit(introspection.index_sets.system_relevant_set);
+    saved_state.current_constraints.copy_from(current_constraints);
+    saved_state.current_constraints.close();
+    saved_state.statistics = statistics;
+    saved_state.time = time;
+    saved_state.last_pressure_normalization_adjustment = last_pressure_normalization_adjustment;
+    saved_state.nonlinear_iteration = nonlinear_iteration;
+    saved_state.rebuild_sparsity_and_matrices = rebuild_sparsity_and_matrices;
+    saved_state.rebuild_stokes_matrix = rebuild_stokes_matrix;
+    saved_state.rebuild_stokes_preconditioner = rebuild_stokes_preconditioner;
+    saved_state.output_directory = parameters.output_directory;
+    saved_state.max_nonlinear_iterations = parameters.max_nonlinear_iterations;
+    saved_state.nonlinear_tolerance = parameters.nonlinear_tolerance;
+    saved_state.linear_stokes_solver_tolerance = parameters.linear_stokes_solver_tolerance;
+    saved_state.n_cheap_stokes_solver_steps = parameters.n_cheap_stokes_solver_steps;
+    saved_state.n_expensive_stokes_solver_steps = parameters.n_expensive_stokes_solver_steps;
+    saved_state.stokes_gmres_restart_length = parameters.stokes_gmres_restart_length;
+    saved_state.linear_solver_A_block_tolerance = parameters.linear_solver_A_block_tolerance;
+    saved_state.use_full_A_block_preconditioner = parameters.use_full_A_block_preconditioner;
+    saved_state.force_nonsymmetric_A_block_solver = parameters.force_nonsymmetric_A_block_solver;
+    saved_state.linear_solver_S_block_tolerance = parameters.linear_solver_S_block_tolerance;
+    saved_state.stokes_krylov_type = parameters.stokes_krylov_type;
+    saved_state.idr_s_parameter = parameters.idr_s_parameter;
+    saved_state.AMG_smoother_type = parameters.AMG_smoother_type;
+    saved_state.AMG_smoother_sweeps = parameters.AMG_smoother_sweeps;
+    saved_state.AMG_aggregation_threshold = parameters.AMG_aggregation_threshold;
+    saved_state.AMG_output_details = parameters.AMG_output_details;
+    saved_state.nullspace_removal = parameters.nullspace_removal;
+    saved_state.output_stokes_solver_debug_information = parameters.output_stokes_solver_debug_information;
+
+    const double diagnostic_time = time;
+    const double time_multiplier = parameters.convert_to_years ? 1./year_in_seconds : 1.0;
+    const char *time_unit = parameters.convert_to_years ? "years" : "seconds";
+
+    try
+      {
+        pcout << "   Running free-slip geoid branch diagnostic at t="
+              << diagnostic_time * time_multiplier << ' ' << time_unit << std::endl;
+
+        free_slip_geoid_branch_active = true;
+        if (parameters.free_slip_geoid_branch_output_solver_debug_information)
+          parameters.output_stokes_solver_debug_information = true;
+
+        if (parameters.output_stokes_solver_debug_information)
+          {
+            pcout << "      [stokes debug] context=" << stokes_solver_debug_context()
+                  << " stage=\"branch free-slip boundary indicators\" indicators=";
+            for (const auto boundary_id : parameters.free_slip_geoid_branch_boundary_indicators)
+              pcout << ' ' << boundary_id;
+            pcout << std::endl;
+          }
+
+        print_stokes_solver_debug_state("before activating branch constraints");
+
+        parameters.nullspace_removal = parameters.free_slip_geoid_branch_nullspace_removal;
+        parse_and_apply_free_slip_branch_solver_parameters();
+
+        parameters.output_directory = free_slip_branch_output_directory(saved_state.output_directory,
+                                                                        parameters.free_slip_geoid_branch_output_directory);
+        Utilities::create_directory(parameters.output_directory, mpi_communicator, false);
+
+        compute_current_constraints();
+        if (stokes_matrix_free)
+          {
+            if (parameters.output_stokes_solver_debug_information)
+              pcout << "      [stokes debug] context=" << stokes_solver_debug_context()
+                    << " stage=\"refreshing matrix-free GMG DoFs after branch constraints\""
+                    << std::endl;
+            stokes_matrix_free->setup_dofs();
+            rebuild_stokes_matrix = rebuild_stokes_preconditioner = true;
+          }
+        print_stokes_solver_debug_state("after matrix-free GMG setup_dofs");
+        if (rebuild_sparsity_and_matrices)
+          {
+            computing_timer.enter_subsection("Setup matrices");
+            rebuild_sparsity_and_matrices = false;
+            setup_system_matrix (introspection.index_sets.system_partitioning);
+            setup_system_preconditioner (introspection.index_sets.system_partitioning);
+            rebuild_stokes_matrix = rebuild_stokes_preconditioner = true;
+            computing_timer.leave_subsection("Setup matrices");
+          }
+        print_stokes_solver_debug_state("after optional matrix/preconditioner setup");
+
+        double initial_stokes_residual = 0.0;
+        double relative_residual = std::numeric_limits<double>::max();
+        SolverControl nonlinear_solver_control(parameters.max_nonlinear_iterations,
+                                               parameters.nonlinear_tolerance);
+        nonlinear_iteration = 0;
+        do
+          {
+            print_stokes_solver_debug_state("before branch Stokes solve");
+            relative_residual = assemble_and_solve_stokes(initial_stokes_residual,
+                                                          nonlinear_iteration == 0 ? &initial_stokes_residual : nullptr);
+            pcout << "      Free-slip branch relative nonlinear residual (Stokes system) after nonlinear iteration "
+                  << nonlinear_iteration+1 << ": " << relative_residual << std::endl;
+            print_stokes_solver_debug_state("after branch Stokes solve");
+            ++nonlinear_iteration;
+          }
+        while (nonlinear_solver_control.check(nonlinear_iteration, relative_residual) == SolverControl::iterate);
+
+        AssertThrow(nonlinear_solver_control.last_check() != SolverControl::failure,
+                    ExcNonlinearSolverNoConvergence());
+
+        pcout << "   Free-slip geoid branch postprocessing:" << std::endl;
+        const std::list<std::pair<std::string,std::string>> output_list =
+          postprocess_manager.execute(statistics,
+                                      Utilities::split_string_list(parameters.free_slip_geoid_branch_postprocessors));
+        if (Utilities::MPI::this_mpi_process(mpi_communicator)==0)
+          {
+            unsigned int width = 0;
+            for (const auto &entry : output_list)
+              width = std::max<unsigned int> (width, entry.first.size());
+            for (const auto &entry : output_list)
+              pcout << "     " << std::left << std::setw(width) << entry.first << ' ' << entry.second << std::endl;
+            pcout << std::endl;
+          }
+      }
+    catch (...)
+      {
+        free_slip_geoid_branch_active = false;
+        solution = saved_state.solution;
+        old_solution = saved_state.old_solution;
+        old_old_solution = saved_state.old_old_solution;
+        current_linearization_point = saved_state.current_linearization_point;
+        current_constraints.reinit(introspection.index_sets.system_relevant_set);
+        current_constraints.copy_from(saved_state.current_constraints);
+        current_constraints.close();
+        if (stokes_matrix_free)
+          stokes_matrix_free->setup_dofs();
+        statistics = saved_state.statistics;
+        time = saved_state.time;
+        last_pressure_normalization_adjustment = saved_state.last_pressure_normalization_adjustment;
+        nonlinear_iteration = saved_state.nonlinear_iteration;
+        rebuild_sparsity_and_matrices = true;
+        rebuild_stokes_matrix = saved_state.rebuild_stokes_matrix;
+        rebuild_stokes_preconditioner = saved_state.rebuild_stokes_preconditioner;
+        parameters.output_directory = saved_state.output_directory;
+        parameters.max_nonlinear_iterations = saved_state.max_nonlinear_iterations;
+        parameters.nonlinear_tolerance = saved_state.nonlinear_tolerance;
+        parameters.linear_stokes_solver_tolerance = saved_state.linear_stokes_solver_tolerance;
+        parameters.n_cheap_stokes_solver_steps = saved_state.n_cheap_stokes_solver_steps;
+        parameters.n_expensive_stokes_solver_steps = saved_state.n_expensive_stokes_solver_steps;
+        parameters.stokes_gmres_restart_length = saved_state.stokes_gmres_restart_length;
+        parameters.linear_solver_A_block_tolerance = saved_state.linear_solver_A_block_tolerance;
+        parameters.use_full_A_block_preconditioner = saved_state.use_full_A_block_preconditioner;
+        parameters.force_nonsymmetric_A_block_solver = saved_state.force_nonsymmetric_A_block_solver;
+        parameters.linear_solver_S_block_tolerance = saved_state.linear_solver_S_block_tolerance;
+        parameters.stokes_krylov_type = saved_state.stokes_krylov_type;
+        parameters.idr_s_parameter = saved_state.idr_s_parameter;
+        parameters.AMG_smoother_type = saved_state.AMG_smoother_type;
+        parameters.AMG_smoother_sweeps = saved_state.AMG_smoother_sweeps;
+        parameters.AMG_aggregation_threshold = saved_state.AMG_aggregation_threshold;
+        parameters.AMG_output_details = saved_state.AMG_output_details;
+        parameters.nullspace_removal = saved_state.nullspace_removal;
+        parameters.output_stokes_solver_debug_information = saved_state.output_stokes_solver_debug_information;
+        throw;
+      }
+
+    free_slip_geoid_branch_active = false;
+    solution = saved_state.solution;
+    old_solution = saved_state.old_solution;
+    old_old_solution = saved_state.old_old_solution;
+    current_linearization_point = saved_state.current_linearization_point;
+    current_constraints.reinit(introspection.index_sets.system_relevant_set);
+    current_constraints.copy_from(saved_state.current_constraints);
+    current_constraints.close();
+    if (stokes_matrix_free)
+      stokes_matrix_free->setup_dofs();
+    statistics = saved_state.statistics;
+    time = saved_state.time;
+    last_pressure_normalization_adjustment = saved_state.last_pressure_normalization_adjustment;
+    nonlinear_iteration = saved_state.nonlinear_iteration;
+    rebuild_sparsity_and_matrices = true;
+    rebuild_stokes_matrix = saved_state.rebuild_stokes_matrix;
+    rebuild_stokes_preconditioner = saved_state.rebuild_stokes_preconditioner;
+    parameters.output_directory = saved_state.output_directory;
+    parameters.max_nonlinear_iterations = saved_state.max_nonlinear_iterations;
+    parameters.nonlinear_tolerance = saved_state.nonlinear_tolerance;
+    parameters.linear_stokes_solver_tolerance = saved_state.linear_stokes_solver_tolerance;
+    parameters.n_cheap_stokes_solver_steps = saved_state.n_cheap_stokes_solver_steps;
+    parameters.n_expensive_stokes_solver_steps = saved_state.n_expensive_stokes_solver_steps;
+    parameters.stokes_gmres_restart_length = saved_state.stokes_gmres_restart_length;
+    parameters.linear_solver_A_block_tolerance = saved_state.linear_solver_A_block_tolerance;
+    parameters.use_full_A_block_preconditioner = saved_state.use_full_A_block_preconditioner;
+    parameters.force_nonsymmetric_A_block_solver = saved_state.force_nonsymmetric_A_block_solver;
+    parameters.linear_solver_S_block_tolerance = saved_state.linear_solver_S_block_tolerance;
+    parameters.stokes_krylov_type = saved_state.stokes_krylov_type;
+    parameters.idr_s_parameter = saved_state.idr_s_parameter;
+    parameters.AMG_smoother_type = saved_state.AMG_smoother_type;
+    parameters.AMG_smoother_sweeps = saved_state.AMG_smoother_sweeps;
+    parameters.AMG_aggregation_threshold = saved_state.AMG_aggregation_threshold;
+    parameters.AMG_output_details = saved_state.AMG_output_details;
+    parameters.nullspace_removal = saved_state.nullspace_removal;
+    parameters.output_stokes_solver_debug_information = saved_state.output_stokes_solver_debug_information;
+  }
+
 
 
   template <int dim>
@@ -2266,7 +2865,10 @@ namespace aspect
         // solve_timestep () in the individual solver schemes
         if (!time_stepping_manager.should_repeat_time_step()
             && !parameters.run_postprocessors_on_nonlinear_iterations)
-          postprocess ();
+          {
+            maybe_run_free_slip_geoid_branch();
+            postprocess ();
+          }
 
         // if the time stepping manager tells us to refine the mesh,
         // we need to do this before going to the next time step
@@ -2415,6 +3017,18 @@ namespace aspect
   template \
   void \
   Simulator<dim>::setup_dofs (); \
+  \
+  template \
+  std::string \
+  Simulator<dim>::stokes_solver_debug_context () const; \
+  \
+  template \
+  bool \
+  Simulator<dim>::is_free_slip_geoid_branch_active () const; \
+  \
+  template \
+  void \
+  Simulator<dim>::print_stokes_solver_debug_state (const std::string &stage) const; \
   \
   template \
   void \

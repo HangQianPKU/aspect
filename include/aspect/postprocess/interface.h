@@ -144,6 +144,24 @@ namespace aspect
         execute (TableHandler &statistics);
 
         /**
+         * Execute only the postprocessor objects listed in @p names, while
+         * also executing their dependencies first. The order follows the
+         * dependency-sorted active plugin list created during parse_parameters().
+         */
+        std::list<std::pair<std::string,std::string>>
+        execute (TableHandler &statistics,
+                 const std::vector<std::string> &names);
+
+        /**
+         * Execute all active postprocessors except the objects listed in @p names.
+         * Dependencies of excluded postprocessors are not excluded unless they
+         * are explicitly listed.
+         */
+        std::list<std::pair<std::string,std::string>>
+        execute_except (TableHandler &statistics,
+                        const std::vector<std::string> &names);
+
+        /**
          * Go through the list of all postprocessors that have been selected
          * in the input file (and are consequently currently active) and return
          * true if one of them has the desired type specified by the template

@@ -108,6 +108,12 @@ namespace aspect
                        "value is set to zero it will also output timing information at the "
                        "initiation timesteps.");
 
+    prm.declare_entry ("Output Stokes solver debug information", "false",
+                       Patterns::Bool (),
+                       "Whether to write a compact diagnostic fingerprint of the Stokes "
+                       "solver state before and after key setup and solve stages. This is "
+                       "intended for comparing restart and diagnostic branch runs.");
+
     prm.declare_entry ("Use years instead of seconds", "true",
                        Patterns::Bool (),
                        "When computing results for mantle convection simulations, "
@@ -1493,6 +1499,68 @@ namespace aspect
     }
     prm.leave_subsection ();
 
+    prm.enter_subsection ("Postprocess");
+    {
+      prm.enter_subsection ("Free slip geoid branch");
+      {
+        prm.declare_entry ("Enable", "false",
+                           Patterns::Bool (),
+                           "Whether to run a diagnostic Stokes-only branch solve with selected "
+                           "prescribed-velocity boundaries temporarily treated as free slip.");
+        prm.declare_entry ("Start time", "0",
+                           Patterns::Double (0.),
+                           "The first model time at which the diagnostic branch may be triggered. "
+                           "Units: Years if the 'Use years instead of seconds' parameter is set; "
+                           "seconds otherwise.");
+        prm.declare_entry ("Time interval", "0",
+                           Patterns::Double (0.),
+                           "The physical time interval between diagnostic branch outputs. "
+                           "A value of zero disables triggering. Units: Years if the "
+                           "'Use years instead of seconds' parameter is set; seconds otherwise.");
+        prm.declare_entry ("Branch solver parameter file", "",
+                           Patterns::FileName (),
+                           "A parameter fragment that may override selected nonlinear and Stokes "
+                           "solver tolerances and iteration limits for the diagnostic branch.");
+        prm.declare_entry ("List of postprocessors", "geoid self gravitation",
+                           Patterns::List (Patterns::Anything ()),
+                           "A comma separated list of postprocessors that are only executed after "
+                           "the diagnostic free-slip branch solve. The listed postprocessors must "
+                           "also appear in Postprocess/List of postprocessors so that ASPECT "
+                           "constructs them, but normal time-step postprocessing skips this list.");
+        prm.declare_entry ("Remove nullspace", "net rotation",
+                           Patterns::MultipleSelection("net rotation|angular momentum|"
+                                                       "net surface rotation|"
+                                                       "net translation|linear momentum|"
+                                                       "net x translation|net y translation|net z translation|"
+                                                       "linear x momentum|linear y momentum|linear z momentum"),
+                           "Nullspace removal applied only during the diagnostic free-slip branch solve. "
+                           "The default removes the solid-body rotation introduced when the branch "
+                           "temporarily turns prescribed-velocity boundaries into free slip.");
+        prm.declare_entry ("Free slip boundary indicators", "top",
+                           Patterns::List (Patterns::Anything ()),
+                           "A comma separated list of symbolic or numeric boundary indicators that "
+                           "are treated as free slip during the diagnostic branch solve.");
+        prm.declare_entry ("Output directory", "free_slip_geoid",
+                           Patterns::Anything (),
+                           "Directory below the main output directory where diagnostic branch "
+                           "postprocessor output is written.");
+        prm.declare_entry ("Include surface topography contribution", "true",
+                           Patterns::Bool (),
+                           "Whether the diagnostic branch requests the surface dynamic topography "
+                           "contribution to be included in geoid output.");
+        prm.declare_entry ("Include CMB topography contribution", "true",
+                           Patterns::Bool (),
+                           "Whether the diagnostic branch requests the CMB dynamic topography "
+                           "contribution to be included in geoid output.");
+        prm.declare_entry ("Output solver debug information", "false",
+                           Patterns::Bool (),
+                           "Whether to enable the detailed Stokes solver debug fingerprint while "
+                           "the free-slip geoid branch diagnostic is active.");
+      }
+      prm.leave_subsection ();
+    }
+    prm.leave_subsection ();
+
     // Finally declare a couple of parameters related how we should
     // evaluate the material models when assembling the matrix and
     // preconditioner
@@ -1728,6 +1796,84 @@ namespace aspect
     }
 
 
+    prm.enter_subsection ("Postprocess");
+    {
+      prm.enter_subsection ("Free slip geoid branch");
+      {
+        free_slip_geoid_branch_enabled = prm.get_bool ("Enable");
+        free_slip_geoid_branch_start_time = prm.get_double ("Start time");
+        free_slip_geoid_branch_time_interval = prm.get_double ("Time interval");
+        if (convert_to_years == true)
+          {
+            free_slip_geoid_branch_start_time *= year_in_seconds;
+            free_slip_geoid_branch_time_interval *= year_in_seconds;
+          }
+        free_slip_geoid_branch_solver_parameter_file = prm.get ("Branch solver parameter file");
+        free_slip_geoid_branch_postprocessors = prm.get ("List of postprocessors");
+        free_slip_geoid_branch_nullspace_removal = NullspaceRemoval::none;
+        const std::vector<std::string> branch_nullspace_names =
+          Utilities::split_string_list(prm.get("Remove nullspace"));
+        AssertThrow(Utilities::has_unique_entries(branch_nullspace_names),
+                    ExcMessage("The list of strings for the parameter "
+                               "Postprocess/Free slip geoid branch/Remove nullspace contains "
+                               "entries more than once. This is not allowed."));
+        for (const auto &nullspace_name : branch_nullspace_names)
+          {
+            if (nullspace_name=="net rotation")
+              free_slip_geoid_branch_nullspace_removal = typename NullspaceRemoval::Kind(
+                free_slip_geoid_branch_nullspace_removal | NullspaceRemoval::net_rotation);
+            else if (nullspace_name=="net surface rotation")
+              free_slip_geoid_branch_nullspace_removal = typename NullspaceRemoval::Kind(
+                free_slip_geoid_branch_nullspace_removal | NullspaceRemoval::net_surface_rotation);
+            else if (nullspace_name=="angular momentum")
+              free_slip_geoid_branch_nullspace_removal = typename NullspaceRemoval::Kind(
+                free_slip_geoid_branch_nullspace_removal | NullspaceRemoval::angular_momentum);
+            else if (nullspace_name=="net translation")
+              free_slip_geoid_branch_nullspace_removal = typename NullspaceRemoval::Kind(
+                free_slip_geoid_branch_nullspace_removal | NullspaceRemoval::net_translation_x |
+                NullspaceRemoval::net_translation_y | ( dim == 3 ? NullspaceRemoval::net_translation_z : 0) );
+            else if (nullspace_name=="net x translation")
+              free_slip_geoid_branch_nullspace_removal = typename NullspaceRemoval::Kind(
+                free_slip_geoid_branch_nullspace_removal | NullspaceRemoval::net_translation_x);
+            else if (nullspace_name=="net y translation")
+              free_slip_geoid_branch_nullspace_removal = typename NullspaceRemoval::Kind(
+                free_slip_geoid_branch_nullspace_removal | NullspaceRemoval::net_translation_y);
+            else if (nullspace_name=="net z translation")
+              free_slip_geoid_branch_nullspace_removal = typename NullspaceRemoval::Kind(
+                free_slip_geoid_branch_nullspace_removal | NullspaceRemoval::net_translation_z);
+            else if (nullspace_name=="linear x momentum")
+              free_slip_geoid_branch_nullspace_removal = typename NullspaceRemoval::Kind(
+                free_slip_geoid_branch_nullspace_removal | NullspaceRemoval::linear_momentum_x);
+            else if (nullspace_name=="linear y momentum")
+              free_slip_geoid_branch_nullspace_removal = typename NullspaceRemoval::Kind(
+                free_slip_geoid_branch_nullspace_removal | NullspaceRemoval::linear_momentum_y);
+            else if (nullspace_name=="linear z momentum")
+              free_slip_geoid_branch_nullspace_removal = typename NullspaceRemoval::Kind(
+                free_slip_geoid_branch_nullspace_removal | NullspaceRemoval::linear_momentum_z);
+            else if (nullspace_name=="linear momentum")
+              free_slip_geoid_branch_nullspace_removal = typename NullspaceRemoval::Kind(
+                free_slip_geoid_branch_nullspace_removal | NullspaceRemoval::linear_momentum_x |
+                NullspaceRemoval::linear_momentum_y | ( dim == 3 ? NullspaceRemoval::linear_momentum_z : 0) );
+            else
+              AssertThrow(false, ExcInternalError());
+          }
+        free_slip_geoid_branch_boundary_indicators_string = prm.get ("Free slip boundary indicators");
+        free_slip_geoid_branch_output_directory = prm.get ("Output directory");
+        if (!free_slip_geoid_branch_output_directory.empty()
+            && free_slip_geoid_branch_output_directory[free_slip_geoid_branch_output_directory.size()-1] == '/')
+          free_slip_geoid_branch_output_directory.resize(free_slip_geoid_branch_output_directory.size()-1);
+        free_slip_geoid_branch_include_surface_topography_contribution =
+          prm.get_bool ("Include surface topography contribution");
+        free_slip_geoid_branch_include_CMB_topography_contribution =
+          prm.get_bool ("Include CMB topography contribution");
+        free_slip_geoid_branch_output_solver_debug_information =
+          prm.get_bool ("Output solver debug information");
+      }
+      prm.leave_subsection ();
+    }
+    prm.leave_subsection ();
+
+
     if (prm.get ("Resume computation") == "true")
       resume_computation = true;
     else if (prm.get ("Resume computation") == "false")
@@ -1744,6 +1890,8 @@ namespace aspect
                              "option if you want to resume a computation from a checkpoint, but deal.II "
                              "did not detect its presence when you called `cmake'."));
 #endif
+
+    output_stokes_solver_debug_information = prm.get_bool ("Output Stokes solver debug information");
 
     surface_pressure                = prm.get_double ("Surface pressure");
     adiabatic_surface_temperature   = prm.get_double ("Adiabatic surface temperature");
@@ -2420,6 +2568,30 @@ namespace aspect
                                           "the conversion function complained as follows:\n\n"
                                           + error));
         }
+    }
+    prm.leave_subsection ();
+
+    prm.enter_subsection ("Postprocess");
+    {
+      prm.enter_subsection ("Free slip geoid branch");
+      {
+        try
+          {
+            const std::vector<types::boundary_id> indicators
+              = geometry_model.translate_symbolic_boundary_names_to_ids(Utilities::split_string_list
+                                                                        (free_slip_geoid_branch_boundary_indicators_string));
+            free_slip_geoid_branch_boundary_indicators =
+              std::set<types::boundary_id> (indicators.begin(), indicators.end());
+          }
+        catch (const std::string &error)
+          {
+            AssertThrow (false, ExcMessage ("While parsing the entry <Postprocess/Free slip geoid branch/"
+                                            "Free slip boundary indicators>, there was an error. Specifically, "
+                                            "the conversion function complained as follows:\n\n"
+                                            + error));
+          }
+      }
+      prm.leave_subsection ();
     }
     prm.leave_subsection ();
   }

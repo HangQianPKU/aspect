@@ -184,6 +184,9 @@ namespace aspect
        */
       bool do_timings;
 
+      unsigned int setup_dofs_call_count = 0;
+      unsigned int build_preconditioner_call_count = 0;
+
       /**
        * The max/min of the evaluated viscosities.
        */

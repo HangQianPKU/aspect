@@ -105,6 +105,12 @@ namespace aspect
       std::vector<double> CMB_dynamic_topography_coecos;
       std::vector<double> CMB_dynamic_topography_coesin;
 
+      std::vector<double> surface_CBF_support_stress_coecos;
+      std::vector<double> surface_CBF_support_stress_coesin;
+
+      std::vector<double> CMB_CBF_support_stress_coecos;
+      std::vector<double> CMB_CBF_support_stress_coesin;
+
       geoid_coecos.clear();
       geoid_coesin.clear();
 
@@ -179,6 +185,15 @@ namespace aspect
                   CMB_topo_contribution_coecos.push_back(coecos_cmb_contribution);
                   CMB_topo_contribution_coesin.push_back(coesin_cmb_contribution);
 
+                  surface_dynamic_topography_coecos.push_back(
+                    topo_coefficients.first.second.first.at(ind));
+                  surface_dynamic_topography_coesin.push_back(
+                    topo_coefficients.first.second.second.at(ind));
+                  CMB_dynamic_topography_coecos.push_back(
+                    topo_coefficients.second.second.first.at(ind));
+                  CMB_dynamic_topography_coesin.push_back(
+                    topo_coefficients.second.second.second.at(ind));
+
                   geoid_coecos.push_back(coecos_density
                                          + coecos_surface_contribution
                                          + coecos_cmb_contribution);
@@ -195,8 +210,15 @@ namespace aspect
        * Branch 2:
        * Self-gravitation branch.
        *
-       * For now we only compute the reduced stress coefficients and write
-       * debug information. The 4x4 system will be added in the next step.
+       * The CBF recovery follows ASPECT's dynamic-topography postprocessor.
+       * The recovered scalar is the support stress
+       *
+       *   q = -t_CBF . n - p_boundary,
+       *
+       * with ASPECT's outward face normal n. ASPECT's no-self dynamic
+       * topography is q/(rho_mantle-rho_above)/g at the surface and
+       * q/(rho_mantle-rho_below)/g at the CMB. Since rho_mantle-rho_below
+       * is negative, the Liu/Zhong positive-CMB-topography RHS uses -q.
        */
       else
         {
@@ -254,10 +276,19 @@ namespace aspect
                     }
                   };
 
-                  const double f_cos[4] = 
+                  const double surface_support_stress_cos =
+                    reduced_stress_coefficients.first.first.at(ind);
+
+                  const double CMB_support_stress_cos =
+                    reduced_stress_coefficients.second.first.at(ind);
+
+                  surface_CBF_support_stress_coecos.push_back(surface_support_stress_cos);
+                  CMB_CBF_support_stress_coecos.push_back(CMB_support_stress_cos);
+
+                  const double f_cos[4] =
                     {
-                      -reduced_stress_coefficients.first.first.at(ind),
-                      reduced_stress_coefficients.second.first.at(ind),
+                      surface_support_stress_cos,
+                      -CMB_support_stress_cos,
                       Gamma_l * density_surface_coefficients.first.at(ind),
                       Gamma_l * density_cmb_coefficients.first.at(ind)
                     };
@@ -266,13 +297,21 @@ namespace aspect
 
                   solve_4x4_system(A, f_cos, x_cos);
 
+                  const double surface_support_stress_sin =
+                    reduced_stress_coefficients.first.second.at(ind);
+
+                  const double CMB_support_stress_sin =
+                    reduced_stress_coefficients.second.second.at(ind);
+
+                  surface_CBF_support_stress_coesin.push_back(surface_support_stress_sin);
+                  CMB_CBF_support_stress_coesin.push_back(CMB_support_stress_sin);
+
                   const double f_sin[4] =
                     {
-                      -reduced_stress_coefficients.first.second.at(ind),
-                      reduced_stress_coefficients.second.second.at(ind),
+                      surface_support_stress_sin,
+                      -CMB_support_stress_sin,
                       Gamma_l * density_surface_coefficients.second.at(ind),
                       Gamma_l * density_cmb_coefficients.second.at(ind)
-                    
                     };
                   
                   double x_sin[4];
@@ -388,9 +427,20 @@ namespace aspect
           debug_content << "Number of final geoid sine coefficients: "
                         << geoid_coesin.size() << "\n";
 
+          debug_content << "CBF support stress convention: q = -t_CBF dot n - boundary_pressure; "
+                        << "surface RHS uses q, CMB RHS uses -q.\n";
+
           if (!geoid_coecos.empty())
             debug_content << "First final geoid cosine coefficient: "
                           << geoid_coecos[0] << "\n";
+
+          if (!surface_CBF_support_stress_coecos.empty())
+            debug_content << "First surface CBF support stress cosine coefficient: "
+                          << surface_CBF_support_stress_coecos[0] << "\n";
+
+          if (!CMB_CBF_support_stress_coecos.empty())
+            debug_content << "First CMB CBF support stress cosine coefficient: "
+                          << CMB_CBF_support_stress_coecos[0] << "\n";
         }
 
       const std::string debug_filename = dir + "debug.txt";
@@ -480,6 +530,51 @@ namespace aspect
               std::ofstream file(filename);
               file << "# degree order cosine_coefficient sine_coefficient\n";
               file << output.str();
+            }
+        }
+
+
+      if (output_CBF_support_stress_coefficients && enable_self_gravitation)
+        {
+          std::ostringstream surface_output;
+          std::ostringstream cmb_output;
+
+          unsigned int ind_out = 0;
+          for (unsigned int ideg = min_degree; ideg < max_degree + 1; ++ideg)
+            for (unsigned int iord = 0; iord < ideg + 1; ++iord)
+              {
+                surface_output << ideg << ' '
+                               << iord << ' '
+                               << surface_CBF_support_stress_coecos.at(ind_out) << ' '
+                               << surface_CBF_support_stress_coesin.at(ind_out) << '\n';
+
+                cmb_output << ideg << ' '
+                           << iord << ' '
+                           << CMB_CBF_support_stress_coecos.at(ind_out) << ' '
+                           << CMB_CBF_support_stress_coesin.at(ind_out) << '\n';
+                ++ind_out;
+              }
+
+          const std::string surface_filename =
+            dir + "surface_CBF_support_stress_SH_coefficients."
+            + Utilities::int_to_string(this->get_timestep_number(), 5);
+
+          const std::string cmb_filename =
+            dir + "CMB_CBF_support_stress_SH_coefficients."
+            + Utilities::int_to_string(this->get_timestep_number(), 5);
+
+          if (dealii::Utilities::MPI::this_mpi_process(this->get_mpi_communicator()) == 0)
+            {
+              {
+                std::ofstream file(surface_filename);
+                file << "# degree order cosine_coefficient[Pa] sine_coefficient[Pa]\n";
+                file << surface_output.str();
+              }
+              {
+                std::ofstream file(cmb_filename);
+                file << "# degree order cosine_coefficient[Pa] sine_coefficient[Pa]\n";
+                file << cmb_output.str();
+              }
             }
         }
 
@@ -629,7 +724,12 @@ namespace aspect
 
           prm.declare_entry("Output CMB dynamic topography coefficients", "true",
                             Patterns::Bool(),
-                            "Whether to output CMB dynamic topography spherical harmonic coefficients.");                            
+                            "Whether to output CMB dynamic topography spherical harmonic coefficients.");
+
+          prm.declare_entry("Output CBF support stress coefficients", "true",
+                            Patterns::Bool(),
+                            "Whether to output CBF support-stress spherical harmonic coefficients. "
+                            "The support stress is q=-t_CBF dot n - boundary pressure in Pa.");
         }
         prm.leave_subsection();
       }
@@ -677,6 +777,9 @@ namespace aspect
 
           output_CMB_dynamic_topography =
             prm.get_bool("Output CMB dynamic topography coefficients");
+
+          output_CBF_support_stress_coefficients =
+            prm.get_bool("Output CBF support stress coefficients");
         }
         prm.leave_subsection();
       }
@@ -1388,7 +1491,7 @@ namespace aspect
                 const double boundary_pressure =
                   at_upper_surface ? surface_pressure : bottom_pressure;
 
-                const double reduced_normal_stress =
+                const double CBF_support_stress =
                   -stress_output_values[q] * normal - boundary_pressure;
 
                 const std::array<double, dim> spherical_position =
@@ -1412,7 +1515,7 @@ namespace aspect
                       std::vector<double>{theta,
                                           phi,
                                           infinitesimal,
-                                          reduced_normal_stress});
+                                          CBF_support_stress});
                   }
                 else
                   {
@@ -1420,7 +1523,7 @@ namespace aspect
                       std::vector<double>{theta,
                                           phi,
                                           infinitesimal,
-                                          reduced_normal_stress});
+                                          CBF_support_stress});
                   }
               }
           }
