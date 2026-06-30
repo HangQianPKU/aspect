@@ -70,3 +70,5 @@ rules.ninja
 .ninja_*
 shared_libs/build/
 shared_libs/*.so
+*.err
+*.out
