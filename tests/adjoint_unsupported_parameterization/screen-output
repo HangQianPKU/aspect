@@ -1,0 +1,26 @@
+-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+Number of active cells: 16 (on 3 levels)
+Number of degrees of freedom: 349 (162+25+81+81)
+
+*** Timestep 0:  t=0 seconds, dt=0 seconds
+
+
+----------------------------------------------------
+Exception 'ExcMessage("The Simple material model adjoint adapter does not support control <" + name + ">. Supported controls are: Viscosity, Composition viscosity prefactor, " "Reference density, Density differential for compositional field 1.")' on rank 0 on processing:
+
+--------------------------------------------------------
+An error occurred in line <238> of file </home/bbkhangq/softwares/aspect_test/source/adjoint/parameterization.cc> in function
+(line in output replaced by default.sh script)
+Additional information:
+    The Simple material model adjoint adapter does not support control
+    <activation energy>. Supported controls are: Viscosity, Composition
+    viscosity prefactor, Reference density, Density differential for
+    compositional field 1.
+
+Stacktrace:
+(rest of the output replaced by default.sh script)

@@ -69,6 +69,7 @@ namespace aspect
         no_Advection_single_Stokes_first_timestep_only,
         no_Advection_iterated_Stokes,
         no_Advection_iterated_defect_correction_Stokes,
+        no_Advection_adjoint_Stokes,
         single_Advection_no_Stokes,
         single_Advection_single_Stokes,
         single_Advection_iterated_Stokes,
@@ -547,6 +548,44 @@ namespace aspect
      * @name Global parameters
      * @{
      */
+    struct Adjoint
+    {
+      std::string                    mode;
+      std::string                    objectives;
+      std::string                    control_parameters;
+      std::string                    parameterization_model;
+      std::string                    optimizer;
+      unsigned int                   max_optimization_iterations;
+      std::string                    line_search;
+      double                         step_length;
+      bool                           apply_optimization_update;
+      bool                           run_finite_difference_check;
+      std::string                    finite_difference_control;
+      double                         finite_difference_step;
+      std::string                    finite_difference_perturbation_pattern;
+      std::string                    finite_difference_mode;
+      std::string                    finite_difference_benchmark_style;
+      unsigned int                   rhea_finite_difference_trials;
+      std::string                    rhea_finite_difference_directions;
+      std::string                    surface_velocity_component;
+      std::string                    surface_velocity_observation_type;
+      std::string                    surface_velocity_weight_type;
+      std::string                    surface_velocity_stddev_mm_per_year;
+      bool                           surface_velocity_euler_pole;
+      double                         surface_velocity_noise_stddev;
+      std::string                    surface_velocity_boundary;
+      double                         surface_velocity_weight;
+      std::string                    surface_velocity_observed_data;
+      std::string                    stress_observation_type;
+      std::string                    stress_qoi_type_list;
+      std::string                    stress_qoi_weakzone_label_file;
+      std::string                    stress_observed_data;
+      double                         volume_stress_weight;
+      std::string                    viscosity_observation_type;
+      std::string                    viscosity_observation_values_pas;
+      std::string                    viscosity_observation_stddev_relative;
+    };
+
     typename NonlinearSolver::Kind nonlinear_solver;
     typename NonlinearSolverFailureStrategy::Kind nonlinear_solver_failure_strategy;
 
@@ -572,6 +611,8 @@ namespace aspect
     std::string                    world_builder_file;
     unsigned int                   n_particle_managers;
     bool                           output_stokes_solver_debug_information;
+
+    Adjoint                        adjoint;
 
     bool                           free_slip_geoid_branch_enabled;
     double                         free_slip_geoid_branch_start_time;

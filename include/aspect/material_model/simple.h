@@ -81,6 +81,33 @@ namespace aspect
         void
         parse_parameters (ParameterHandler &prm) override;
 
+        double
+        get_reference_viscosity() const;
+
+        double
+        get_composition_viscosity_prefactor() const;
+
+        double
+        get_thermal_viscosity_exponent() const;
+
+        double
+        get_minimum_thermal_prefactor() const;
+
+        double
+        get_maximum_thermal_prefactor() const;
+
+        double
+        get_reference_density() const;
+
+        double
+        get_reference_temperature() const;
+
+        double
+        get_thermal_expansion_coefficient() const;
+
+        bool
+        uses_adjoint_property_increments() const;
+
         /**
          * @}
          */
@@ -92,6 +119,7 @@ namespace aspect
         double thermal_viscosity_exponent;
         double maximum_thermal_prefactor;
         double minimum_thermal_prefactor;
+        bool use_adjoint_property_increments;
 
         /**
          * The thermal conductivity.

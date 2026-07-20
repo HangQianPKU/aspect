@@ -1,0 +1,32 @@
+-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+Number of active cells: 16 (on 3 levels)
+Number of degrees of freedom: 349 (162+25+81+81)
+
+*** Timestep 0:  t=0 seconds, dt=0 seconds
+   Solving Stokes system (GMG)... 16+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           not available
+     Pressure at top/bottom of domain: 1.017e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 14+0 iterations.
+
+
+----------------------------------------------------
+Exception 'ExcMessage("Applying adjoint optimizer updates is not implemented for the selected parameterization yet. " "The v1 optimization path can only write update proposals.")' on rank 0 on processing:
+
+--------------------------------------------------------
+An error occurred in line <145> of file </home/bbkhangq/softwares/aspect_test/source/adjoint/parameterization.cc> in function
+(line in output replaced by default.sh script)
+Additional information:
+    Applying adjoint optimizer updates is not implemented for the selected
+    parameterization yet. The v1 optimization path can only write update
+    proposals.
+
+Stacktrace:
+(rest of the output replaced by default.sh script)

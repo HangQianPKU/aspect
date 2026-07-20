@@ -1,0 +1,28 @@
+-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+Number of active cells: 16 (on 3 levels)
+Number of degrees of freedom: 349 (162+25+81+81)
+
+*** Timestep 0:  t=0 seconds, dt=0 seconds
+
+
+----------------------------------------------------
+Exception 'ExcMessage("The v1 dynamic-topography adjoint currently supports only the incompressible " "mass conservation formulation. Compressible, reference-density, and projected-density " "formulations need explicit adjoint physics terms before they can be used.")' on rank 0 on processing:
+
+--------------------------------------------------------
+An error occurred in line <93> of file </home/bbkhangq/softwares/aspect_test/source/adjoint/manager.cc> in function
+(line in output replaced by default.sh script)
+The violated condition was:
+    this->get_parameters().formulation_mass_conservation == MassConservation::incompressible
+Additional information:
+    The v1 dynamic-topography adjoint currently supports only the
+    incompressible mass conservation formulation. Compressible,
+    reference-density, and projected-density formulations need explicit
+    adjoint physics terms before they can be used.
+
+Stacktrace:
+(rest of the output replaced by default.sh script)

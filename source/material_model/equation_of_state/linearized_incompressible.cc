@@ -137,6 +137,33 @@ namespace aspect
           compositional_delta_rhos[1]    = prm.get_double ("Density differential for compositional field 2");
       }
 
+
+
+      template <int dim>
+      double
+      LinearizedIncompressible<dim>::get_reference_density() const
+      {
+        return reference_rho;
+      }
+
+
+
+      template <int dim>
+      double
+      LinearizedIncompressible<dim>::get_reference_temperature() const
+      {
+        return reference_T;
+      }
+
+
+
+      template <int dim>
+      double
+      LinearizedIncompressible<dim>::get_thermal_expansion_coefficient() const
+      {
+        return thermal_alpha;
+      }
+
     }
   }
 }

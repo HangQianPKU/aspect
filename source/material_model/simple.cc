@@ -51,14 +51,29 @@ namespace aspect
                :
                1.0);
 
-          out.viscosities[i] = ((composition_viscosity_prefactor != 1.0) && (in.composition[i].size()>0))
+          double legacy_composition = 0.0;
+          bool has_legacy_composition = false;
+          for (unsigned int c = 0; c < in.composition[i].size(); ++c)
+            {
+              const std::string composition_name = this->introspection().name_for_compositional_index(c);
+              if (use_adjoint_property_increments &&
+                  (composition_name == "density_increment" ||
+                   composition_name == "viscosity_increment"))
+                continue;
+
+              legacy_composition = in.composition[i][c];
+              has_legacy_composition = true;
+              break;
+            }
+
+          out.viscosities[i] = ((composition_viscosity_prefactor != 1.0) && has_legacy_composition)
                                ?
                                // Geometric interpolation
-                               std::pow(10.0, ((1-in.composition[i][0]) * std::log10(eta *
-                                                                                     temperature_dependence)
-                                               + in.composition[i][0] * std::log10(eta *
-                                                                                   composition_viscosity_prefactor *
-                                                                                   temperature_dependence)))
+                               std::pow(10.0, ((1-legacy_composition) * std::log10(eta *
+                                                                                   temperature_dependence)
+                                               + legacy_composition * std::log10(eta *
+                                                                                 composition_viscosity_prefactor *
+                                                                                 temperature_dependence)))
                                :
                                temperature_dependence * eta;
 
@@ -78,14 +93,24 @@ namespace aspect
           for (unsigned int c=0; c<in.composition[i].size(); ++c)
             out.reaction_terms[i][c] = 0.0;
 
-          std::vector<double> volume_fractions (n_compositions_for_eos, 1.0);
-          if (in.composition[i].size()>0)
+          std::vector<double> volume_fractions(n_compositions_for_eos, 0.0);
+          volume_fractions[0] = 1.0;
+          if (has_legacy_composition && n_compositions_for_eos > 1)
             {
-              volume_fractions[1] = std::max(0.0, in.composition[i][0]);
+              volume_fractions[1] = std::max(0.0, legacy_composition);
               volume_fractions[0] = 1.0 - volume_fractions[1];
             }
 
           out.densities[i] = MaterialUtilities::average_value(volume_fractions, eos_outputs.densities, MaterialUtilities::arithmetic);
+
+          if (use_adjoint_property_increments)
+            {
+              if (this->introspection().compositional_name_exists("density_increment"))
+                out.densities[i] += in.composition[i][this->introspection().compositional_index_for_name("density_increment")];
+
+              if (this->introspection().compositional_name_exists("viscosity_increment"))
+                out.viscosities[i] += in.composition[i][this->introspection().compositional_index_for_name("viscosity_increment")];
+            }
         }
     }
 
@@ -145,6 +170,11 @@ namespace aspect
                              Patterns::Double (0.),
                              "The value of the thermal conductivity $k$. "
                              "Units: $\\frac{\\text{W}}{\\text{m}\\text{K}}$.");
+          prm.declare_entry ("Use adjoint property increments", "false",
+                             Patterns::Bool (),
+                             "Whether fields named density_increment and viscosity_increment are interpreted as "
+                             "additive density and viscosity increments for adjoint finite-difference "
+                             "checks and legacy physical-property update tests.");
         }
         prm.leave_subsection();
       }
@@ -173,6 +203,7 @@ namespace aspect
           if ( minimum_thermal_prefactor == 0.0 ) minimum_thermal_prefactor = std::numeric_limits<double>::min();
 
           k_value                    = prm.get_double ("Thermal conductivity");
+          use_adjoint_property_increments = prm.get_bool ("Use adjoint property increments");
 
           if (thermal_viscosity_exponent!=0.0 && reference_T == 0.0)
             AssertThrow(false, ExcMessage("Error: Material model simple with Thermal viscosity exponent can not have reference_T=0."));
@@ -190,8 +221,91 @@ namespace aspect
 
       if (thermal_viscosity_exponent != 0)
         this->model_dependence.viscosity |= NonlinearDependence::temperature;
-      if (composition_viscosity_prefactor != 1.0)
+      if (composition_viscosity_prefactor != 1.0 || use_adjoint_property_increments)
         this->model_dependence.viscosity |= NonlinearDependence::compositional_fields;
+      if (use_adjoint_property_increments)
+        this->model_dependence.density |= NonlinearDependence::compositional_fields;
+    }
+
+
+
+    template <int dim>
+    double
+    Simple<dim>::get_reference_viscosity() const
+    {
+      return eta;
+    }
+
+
+
+    template <int dim>
+    double
+    Simple<dim>::get_composition_viscosity_prefactor() const
+    {
+      return composition_viscosity_prefactor;
+    }
+
+
+
+    template <int dim>
+    double
+    Simple<dim>::get_thermal_viscosity_exponent() const
+    {
+      return thermal_viscosity_exponent;
+    }
+
+
+
+    template <int dim>
+    double
+    Simple<dim>::get_minimum_thermal_prefactor() const
+    {
+      return minimum_thermal_prefactor;
+    }
+
+
+
+    template <int dim>
+    double
+    Simple<dim>::get_maximum_thermal_prefactor() const
+    {
+      return maximum_thermal_prefactor;
+    }
+
+
+
+    template <int dim>
+    double
+    Simple<dim>::get_reference_density() const
+    {
+      return equation_of_state.get_reference_density();
+    }
+
+
+
+    template <int dim>
+    double
+    Simple<dim>::get_reference_temperature() const
+    {
+      return equation_of_state.get_reference_temperature();
+    }
+
+
+
+    template <int dim>
+    bool
+    Simple<dim>::uses_adjoint_property_increments() const
+    {
+      return use_adjoint_property_increments;
+    }
+
+
+
+    template <int dim>
+    double
+    Simple<dim>::get_thermal_expansion_coefficient() const
+    {
+      return equation_of_state.get_thermal_expansion_coefficient();
     }
   }
 }

@@ -1,0 +1,6 @@
+Adjoint Rhea none-objective smoke summary:
+kernel file: present
+control gradient file: present
+kernel contribution rows: 6
+control gradient integral rows: 4
+nonzero control gradient integrals: 0

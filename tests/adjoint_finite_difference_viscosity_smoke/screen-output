@@ -1,0 +1,471 @@
+
+Number of active cells: 16 (on 3 levels)
+Number of degrees of freedom: 300 (162+25+81+16+16)
+
+*** Timestep 0:  t=0 seconds, dt=0 seconds
+   Solving Stokes system (GMG)... 12+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           not available
+     Compositions min/max/mass:        0/0/0 // 0/0/0
+     Pressure at top/bottom of domain: 1.492e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 11+0 iterations.
+   Solving Stokes system (GMG)... 5+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // -6.25e-06/9.375e-05/0
+     Pressure at top/bottom of domain: 2.713e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 5+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // -9.375e-05/6.25e-06/0
+     Pressure at top/bottom of domain: -2.713e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // 0/0/0
+     Pressure at top/bottom of domain: 1.492e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 6+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // -6.25e-06/9.375e-05/0
+     Pressure at top/bottom of domain: 8.138e-10 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 6+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // -9.375e-05/6.25e-06/0
+     Pressure at top/bottom of domain: 4.069e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // 0/0/0
+     Pressure at top/bottom of domain: 1.492e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 5+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // -6.25e-06/9.375e-05/0
+     Pressure at top/bottom of domain: 1.628e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 5+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // -9.375e-05/6.25e-06/0
+     Pressure at top/bottom of domain: 2.17e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // 0/0/0
+     Pressure at top/bottom of domain: 1.492e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 6+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // -6.25e-06/9.375e-05/0
+     Pressure at top/bottom of domain: -5.697e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 6+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // -9.375e-05/6.25e-06/0
+     Pressure at top/bottom of domain: 1.492e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // 0/0/0
+     Pressure at top/bottom of domain: 1.492e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 6+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // -6.25e-06/9.375e-05/0
+     Pressure at top/bottom of domain: 8.138e-10 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 6+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // -9.375e-05/6.25e-06/0
+     Pressure at top/bottom of domain: 1.763e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // 0/0/0
+     Pressure at top/bottom of domain: 1.492e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 5+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // -6.25e-06/9.375e-05/0
+     Pressure at top/bottom of domain: -1.356e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 5+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // -9.375e-05/6.25e-06/0
+     Pressure at top/bottom of domain: -1.221e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // 0/0/0
+     Pressure at top/bottom of domain: 1.492e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 6+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // -6.25e-06/9.375e-05/0
+     Pressure at top/bottom of domain: 3.798e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 6+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // -9.375e-05/6.25e-06/0
+     Pressure at top/bottom of domain: -4.205e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // 0/0/0
+     Pressure at top/bottom of domain: 1.492e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 5+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // -6.25e-06/9.375e-05/0
+     Pressure at top/bottom of domain: -3.12e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 5+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // -9.375e-05/6.25e-06/0
+     Pressure at top/bottom of domain: -1.628e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // 0/0/0
+     Pressure at top/bottom of domain: 1.492e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 5+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // -6.25e-06/9.375e-05/0
+     Pressure at top/bottom of domain: -1.899e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 5+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // -9.375e-05/6.25e-06/0
+     Pressure at top/bottom of domain: 1.221e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // 0/0/0
+     Pressure at top/bottom of domain: 1.492e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 6+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // -6.25e-06/9.375e-05/0
+     Pressure at top/bottom of domain: -1.628e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 6+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // -9.375e-05/6.25e-06/0
+     Pressure at top/bottom of domain: 1.221e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // 0/0/0
+     Pressure at top/bottom of domain: 1.492e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 6+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // -6.25e-06/9.375e-05/0
+     Pressure at top/bottom of domain: 1.356e-10 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 6+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // -9.375e-05/6.25e-06/0
+     Pressure at top/bottom of domain: 4.069e-10 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // 0/0/0
+     Pressure at top/bottom of domain: 1.492e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 7+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // -6.25e-06/9.375e-05/0
+     Pressure at top/bottom of domain: 1.628e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 6+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // -9.375e-05/6.25e-06/0
+     Pressure at top/bottom of domain: 1.221e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // 0/0/0
+     Pressure at top/bottom of domain: 1.492e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 6+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // -6.25e-06/9.375e-05/0
+     Pressure at top/bottom of domain: -1.356e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 6+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // -9.375e-05/6.25e-06/0
+     Pressure at top/bottom of domain: 6.782e-10 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // 0/0/0
+     Pressure at top/bottom of domain: 1.492e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 5+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // -6.25e-06/9.375e-05/0
+     Pressure at top/bottom of domain: -1.356e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 5+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // -9.375e-05/6.25e-06/0
+     Pressure at top/bottom of domain: -8.138e-10 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // 0/0/0
+     Pressure at top/bottom of domain: 1.492e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 7+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // -6.25e-06/9.375e-05/0
+     Pressure at top/bottom of domain: -1.221e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 6+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // -9.375e-05/6.25e-06/0
+     Pressure at top/bottom of domain: -2.848e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // 0/0/0
+     Pressure at top/bottom of domain: 1.492e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 6+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // -6.25e-06/9.375e-05/0
+     Pressure at top/bottom of domain: -9.494e-10 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 6+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // -9.375e-05/6.25e-06/0
+     Pressure at top/bottom of domain: 1.492e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // 0/0/0
+     Pressure at top/bottom of domain: 1.492e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_finite_difference_viscosity_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        0/0/0 // 0/0/0
+     Pressure at top/bottom of domain: 1.492e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+Termination requested by criterion: end time
+
+
+
+
+Adjoint finite-difference smoke summary:
+finite difference file: present
+diagnostic_status density validated baseline
+diagnostic_status viscosity under investigation
+multi_cell_summary dynamic topography|viscosity|all cells count 16
+summary_metrics correlation 0.9593839456139611 relative_l2_error 0.5368099007294633 max_relative_error 1.389022363712202
+multi_cell_summary dynamic topography|viscosity|bottom boundary count 4
+summary_metrics correlation 0.7904088759881894 relative_l2_error 0.7744019417768928 max_relative_error 1.389022363712202
+multi_cell_summary dynamic topography|viscosity|interior count 4
+summary_metrics correlation 0.9847321378748723 relative_l2_error 0.3743991520696917 max_relative_error 0.4715386526691964
+multi_cell_summary dynamic topography|viscosity|side boundary count 4
+summary_metrics correlation 0.5950480938855682 relative_l2_error 0.9680438998117105 max_relative_error 0.9855109399361872
+multi_cell_summary dynamic topography|viscosity|top boundary count 4
+summary_metrics correlation 0.9814101370887404 relative_l2_error 0.5707300917792419 max_relative_error 0.5834478031644598
+term_derivative dynamic topography|dynamic topography surface objective|viscosity -8642215118.023026
+term_derivative dynamic topography|incompressible Stokes volume|viscosity 9313582696.316357
+check dynamic topography|viscosity|cell 0 cell 0 group bottom boundary step 0.0001
+derivatives -1725781448.364258 671367578.293331
+absolute_error 2397149026.657589
+objective_scaled_error 0.007070646758292225
+relative_error 1.389022363712202
+term_derivative dynamic topography|dynamic topography surface objective|viscosity -8642215118.023026
+term_derivative dynamic topography|incompressible Stokes volume|viscosity 6883865932.3076
+check dynamic topography|viscosity|cell 1 cell 1 group bottom boundary step 0.0001
+derivatives -5687868031.921387 -1758349185.715426
+absolute_error 3929518846.20596
+objective_scaled_error 0.01159052145399357
+relative_error 0.6908597077415932
+term_derivative dynamic topography|dynamic topography surface objective|viscosity -8642215118.023026
+term_derivative dynamic topography|incompressible Stokes volume|viscosity 8600934392.195847
+check dynamic topography|viscosity|cell 2 cell 2 group side boundary step 0.0001
+derivatives -2849096190.185547 -41280725.8271786
+absolute_error 2807815464.358368
+objective_scaled_error 0.008281948478134966
+relative_error 0.9855109399361872
+term_derivative dynamic topography|dynamic topography surface objective|viscosity -8642215118.023026
+term_derivative dynamic topography|incompressible Stokes volume|viscosity 1274583484.437154
+check dynamic topography|viscosity|cell 3 cell 3 group interior step 0.0001
+derivatives -13941666018.06641 -7367631633.585874
+absolute_error 6574034384.480533
+objective_scaled_error 0.01939074580174131
+relative_error 0.4715386508299312
+term_derivative dynamic topography|dynamic topography surface objective|viscosity -8642215118.023026
+term_derivative dynamic topography|incompressible Stokes volume|viscosity 6883865932.307611
+check dynamic topography|viscosity|cell 4 cell 4 group bottom boundary step 0.0001
+derivatives -5687868063.354492 -1758349185.715415
+absolute_error 3929518877.639078
+objective_scaled_error 0.01159052154670868
+relative_error 0.6908597094500104
+term_derivative dynamic topography|dynamic topography surface objective|viscosity -8642215118.023026
+term_derivative dynamic topography|incompressible Stokes volume|viscosity 9313582696.316328
+check dynamic topography|viscosity|cell 5 cell 5 group bottom boundary step 0.0001
+derivatives -1725781485.290527 671367578.2933024
+absolute_error 2397149063.58383
+objective_scaled_error 0.007070646867210093
+relative_error 1.389022355388336
+term_derivative dynamic topography|dynamic topography surface objective|viscosity -8642215118.023026
+term_derivative dynamic topography|incompressible Stokes volume|viscosity 1274583484.43707
+check dynamic topography|viscosity|cell 6 cell 6 group interior step 0.0001
+derivatives -13941666066.58936 -7367631633.585957
+absolute_error 6574034433.003399
+objective_scaled_error 0.01939074594486349
+relative_error 0.4715386526691964
+term_derivative dynamic topography|dynamic topography surface objective|viscosity -8642215118.023026
+term_derivative dynamic topography|incompressible Stokes volume|viscosity 8600934392.19585
+check dynamic topography|viscosity|cell 7 cell 7 group side boundary step 0.0001
+derivatives -2849096162.719727 -41280725.82717526
+absolute_error 2807815436.892551
+objective_scaled_error 0.00828194839712159
+relative_error 0.9855109397965112
+term_derivative dynamic topography|dynamic topography surface objective|viscosity -8642215118.023026
+term_derivative dynamic topography|incompressible Stokes volume|viscosity 8476290412.743767
+check dynamic topography|viscosity|cell 8 cell 8 group side boundary step 0.0001
+derivatives -1182755684.814453 -165924705.2792588
+absolute_error 1016830979.535194
+objective_scaled_error 0.002999251919996429
+relative_error 0.8597134578090921
+term_derivative dynamic topography|dynamic topography surface objective|viscosity -8642215118.023026
+term_derivative dynamic topography|incompressible Stokes volume|viscosity -1999224518.720253
+check dynamic topography|viscosity|cell 9 cell 9 group interior step 0.0001
+derivatives -14077703891.29639 -10641439636.74328
+absolute_error 3436264254.553108
+objective_scaled_error 0.01013559103826615
+relative_error 0.2440926646196612
+term_derivative dynamic topography|dynamic topography surface objective|viscosity -7971748422.872526
+term_derivative dynamic topography|incompressible Stokes volume|viscosity 13862106495.31237
+check dynamic topography|viscosity|cell 10 cell 10 group top boundary step 0.0001
+derivatives 7223472380.67627 5890358072.439845
+absolute_error 1333114308.236424
+objective_scaled_error 0.003932156479121506
+relative_error 0.1845531121296565
+term_derivative dynamic topography|dynamic topography surface objective|viscosity 59825039131.0102
+term_derivative dynamic topography|incompressible Stokes volume|viscosity -46412138894.5927
+check dynamic topography|viscosity|cell 11 cell 11 group top boundary step 0.0001
+derivatives 32199806718.44482 13412900236.41749
+absolute_error 18786906482.02734
+objective_scaled_error 0.05541346780328866
+relative_error 0.5834478028486346
+term_derivative dynamic topography|dynamic topography surface objective|viscosity -8642215118.023026
+term_derivative dynamic topography|incompressible Stokes volume|viscosity -1999224518.720184
+check dynamic topography|viscosity|cell 12 cell 12 group interior step 0.0001
+derivatives -14077703925.78125 -10641439636.74321
+absolute_error 3436264289.03804
+objective_scaled_error 0.01013559113998271
+relative_error 0.2440926664713431
+term_derivative dynamic topography|dynamic topography surface objective|viscosity -8642215118.023026
+term_derivative dynamic topography|incompressible Stokes volume|viscosity 8476290412.743814
+check dynamic topography|viscosity|cell 13 cell 13 group side boundary step 0.0001
+derivatives -1182755676.879883 -165924705.2792095
+absolute_error 1016830971.600673
+objective_scaled_error 0.002999251896592735
+relative_error 0.8597134568680153
+term_derivative dynamic topography|dynamic topography surface objective|viscosity 59825039131.01014
+term_derivative dynamic topography|incompressible Stokes volume|viscosity -46412138894.59244
+check dynamic topography|viscosity|cell 14 cell 14 group top boundary step 0.0001
+derivatives 32199806742.85889 13412900236.41771
+absolute_error 18786906506.44118
+objective_scaled_error 0.05541346787529881
+relative_error 0.5834478031644598
+term_derivative dynamic topography|dynamic topography surface objective|viscosity -7971748422.871511
+term_derivative dynamic topography|incompressible Stokes volume|viscosity 13862106495.31181
+check dynamic topography|viscosity|cell 15 cell 15 group top boundary step 0.0001
+derivatives 7223472387.084961 5890358072.440298
+absolute_error 1333114314.644663
+objective_scaled_error 0.003932156498023268
+relative_error 0.1845531128530613

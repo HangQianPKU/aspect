@@ -20,6 +20,8 @@
 
 
 #include <aspect/simulator.h>
+#include <aspect/adjoint/manager.h>
+#include <aspect/adjoint/optimizer.h>
 #include <aspect/global.h>
 #include <aspect/mesh_deformation/free_surface.h>
 #include <aspect/volume_of_fluid/handler.h>
@@ -804,6 +806,89 @@ namespace aspect
 
 
   template <int dim>
+  void Simulator<dim>::solve_stokes_adjoint ()
+  {
+    Assert (adjoint_manager != nullptr,
+            ExcInternalError());
+
+    adjoint_manager->solve_instantaneous_stokes();
+  }
+
+
+
+  template <int dim>
+  const Adjoint::KernelRepository<dim> &
+  Simulator<dim>::get_adjoint_kernels () const
+  {
+    Assert (adjoint_manager != nullptr,
+            ExcInternalError());
+
+    return adjoint_manager->get_kernels();
+  }
+
+
+
+  template <int dim>
+  std::map<std::string, double>
+  Simulator<dim>::get_adjoint_objective_values () const
+  {
+    Assert (adjoint_manager != nullptr,
+            ExcInternalError());
+
+    return adjoint_manager->get_objective_values();
+  }
+
+
+
+  template <int dim>
+  const Adjoint::ControlGradientRepository<dim> &
+  Simulator<dim>::get_adjoint_control_gradients () const
+  {
+    Assert (adjoint_manager != nullptr,
+            ExcInternalError());
+
+    return adjoint_manager->get_control_gradients();
+  }
+
+
+
+  template <int dim>
+  const Adjoint::ControlUpdateRepository<dim> &
+  Simulator<dim>::get_adjoint_control_updates () const
+  {
+    Assert (adjoint_manager != nullptr,
+            ExcInternalError());
+
+    return adjoint_manager->get_control_updates();
+  }
+
+
+
+  template <int dim>
+  const std::vector<Adjoint::FiniteDifferenceCheckResult> &
+  Simulator<dim>::get_adjoint_finite_difference_checks () const
+  {
+    Assert (adjoint_manager != nullptr,
+            ExcInternalError());
+
+    return adjoint_manager->get_finite_difference_checks();
+  }
+
+
+
+  template <int dim>
+  const std::vector<Adjoint::OptimizationHistoryEntry> &
+  Simulator<dim>::get_adjoint_optimization_history () const
+  {
+    Assert (adjoint_manager != nullptr,
+            ExcInternalError());
+
+    return adjoint_manager->get_optimization_history();
+  }
+
+
+
+  template <int dim>
   void Simulator<dim>::solve_no_advection_no_stokes ()
   {
     if (parameters.run_postprocessors_on_nonlinear_iterations)
@@ -1514,6 +1599,13 @@ namespace aspect
   template void Simulator<dim>::solve_no_advection_single_stokes_first_timestep_only(); \
   template void Simulator<dim>::solve_no_advection_iterated_stokes(); \
   template void Simulator<dim>::solve_no_advection_iterated_defect_correction_stokes(); \
+  template void Simulator<dim>::solve_stokes_adjoint(); \
+  template const Adjoint::KernelRepository<dim> &Simulator<dim>::get_adjoint_kernels() const; \
+  template std::map<std::string, double> Simulator<dim>::get_adjoint_objective_values() const; \
+  template const Adjoint::ControlGradientRepository<dim> &Simulator<dim>::get_adjoint_control_gradients() const; \
+  template const Adjoint::ControlUpdateRepository<dim> &Simulator<dim>::get_adjoint_control_updates() const; \
+  template const std::vector<Adjoint::FiniteDifferenceCheckResult> &Simulator<dim>::get_adjoint_finite_difference_checks() const; \
+  template const std::vector<Adjoint::OptimizationHistoryEntry> &Simulator<dim>::get_adjoint_optimization_history() const; \
   template void Simulator<dim>::solve_single_advection_no_stokes(); \
   template void Simulator<dim>::solve_single_advection_single_stokes(); \
   template void Simulator<dim>::solve_single_advection_iterated_stokes(); \

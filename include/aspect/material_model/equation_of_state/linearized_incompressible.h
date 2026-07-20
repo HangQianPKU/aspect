@@ -96,6 +96,15 @@ namespace aspect
           parse_parameters (ParameterHandler &prm,
                             const unsigned int n_compositions = 0);
 
+          double
+          get_reference_density() const;
+
+          double
+          get_reference_temperature() const;
+
+          double
+          get_thermal_expansion_coefficient() const;
+
 
         private:
           /**

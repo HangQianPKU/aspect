@@ -1,0 +1,126 @@
+# Enable if: QUICK_TEST
+# EXPECT FAILURE
+# Unsupported smoke test for parsed Rhea plate-boundary stress QOI observations.
+
+set Dimension                              = 2
+set CFL number                             = 1.0
+set End time                               = 0
+set Start time                             = 0
+set Output directory                       = output-adjoint-volume-stress-qoi-unsupported
+set Adiabatic surface temperature          = 1600
+set Pressure normalization                 = surface
+set Surface pressure                       = 0
+set Use years instead of seconds           = false
+set Nonlinear solver scheme                = no Advection, adjoint Stokes
+
+subsection Discretization
+  set Composition polynomial degree           = 0, 0
+  set Use discontinuous composition discretization = true, true
+end
+
+subsection Adjoint
+  set Mode = kernel only
+  set List of objectives = volume stress
+  set Control parameters = density, viscosity
+  set Parameterization model = physical property fields
+
+  subsection Volume stress objective
+    set Observation type = plate boundary normal
+    set Weight = 1e-20
+  end
+
+  subsection Debug
+    set Run finite difference check = true
+    set Finite difference control = viscosity
+    set Finite difference step = 1e17
+    set Finite difference perturbation pattern = cell 0
+    set Finite difference benchmark style = rhea
+    set Rhea finite difference trials = 2
+    set Rhea finite difference directions = both
+  end
+end
+
+subsection Boundary temperature model
+  set List of model names = box
+  set Fixed temperature boundary indicators   = 2,3
+
+  subsection Box
+    set Bottom temperature  = 1600
+    set Left temperature    = 1600
+    set Right temperature   = 1600
+    set Top temperature     = 1600
+  end
+end
+
+subsection Gravity model
+  set Model name = vertical
+
+  subsection Vertical
+    set Magnitude = 10
+  end
+end
+
+subsection Geometry model
+  set Model name = box
+
+  subsection Box
+    set X extent = 1800000
+    set Y extent = 700000
+  end
+end
+
+subsection Initial temperature model
+  set Model name = function
+
+  subsection Function
+    set Variable names     = x,y
+    set Function expression = if(sqrt((x-900000)*(x-900000) + (y-650000)*(y-650000))<50000,1700,1600)
+  end
+end
+
+subsection Compositional fields
+  set Number of fields = 2
+  set Names of fields = density_increment, viscosity_increment
+end
+
+subsection Initial composition model
+  set Model name = function
+
+  subsection Function
+    set Variable names      = x,y
+    set Function expression = 0.0; 0.0
+  end
+end
+
+subsection Material model
+  set Model name = simple
+
+  subsection Simple model
+    set Reference density             = 3300
+    set Reference specific heat       = 1250
+    set Reference temperature         = 1600
+    set Thermal conductivity          = 0
+    set Thermal expansion coefficient = 3e-4
+    set Viscosity                     = 1e21
+    set Composition viscosity prefactor = 100
+    set Thermal viscosity exponent    = 36.84136
+    set Use adjoint property increments = true
+  end
+end
+
+subsection Mesh refinement
+  set Initial adaptive refinement        = 0
+  set Initial global refinement          = 2
+  set Refinement fraction                = 0.5
+  set Coarsening fraction                = 0.00
+  set Strategy                           = thermal energy density
+end
+
+subsection Boundary velocity model
+  set Tangential velocity boundary indicators = 0,1,3
+  set Zero velocity boundary indicators       = 2
+end
+
+subsection Postprocess
+  set List of postprocessors = dynamic topography, adjoint kernels, composition statistics
+end

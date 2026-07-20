@@ -54,6 +54,7 @@ namespace aspect
             case Parameters<dim>::NonlinearSolver::Kind::no_Advection_iterated_Stokes:
             case Parameters<dim>::NonlinearSolver::Kind::no_Advection_single_Stokes:
             case Parameters<dim>::NonlinearSolver::Kind::no_Advection_single_Stokes_first_timestep_only:
+            case Parameters<dim>::NonlinearSolver::Kind::no_Advection_adjoint_Stokes:
               return true;
 
             case Parameters<dim>::NonlinearSolver::Kind::single_Advection_single_Stokes:

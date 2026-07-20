@@ -1,0 +1,7 @@
+Adjoint volume stress objective smoke summary:
+finite difference file: present
+kernel file: present
+rhea elementwise rows: 32
+rhea random rows: 2
+multi-cell summary rows: 5
+direct viscosity contribution rows: 17

@@ -1,0 +1,43 @@
+
+Number of active cells: 16 (on 3 levels)
+Number of degrees of freedom: 349 (162+25+81+81)
+
+*** Timestep 0:  t=0 seconds, dt=0 seconds
+   Solving Stokes system (GMG)... 10+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           not available
+     Pressure at top/bottom of domain: 4.25e-22 Pa, 2.31e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 9+0 iterations.
+
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_zero_objective_smoke/adjoint_kernels_rank_00000.txt
+     Pressure at top/bottom of domain: 4.25e-22 Pa, 2.31e+10 Pa
+     Computing dynamic topography
+
+Termination requested by criterion: end time
+
+
+
+
+Adjoint zero-objective smoke summary:
+kernel file: present
+16 dynamic topography|dynamic topography surface objective|density
+16 dynamic topography|dynamic topography surface objective|viscosity
+16 dynamic topography|incompressible Stokes volume|density
+16 dynamic topography|incompressible Stokes volume|viscosity
+kernel_integral dynamic topography|dynamic topography surface objective|density -3.000041739711165e-19
+kernel_integral dynamic topography|dynamic topography surface objective|viscosity 3.584312123948119e-16
+kernel_integral dynamic topography|incompressible Stokes volume|density 1.686122060599036e-13
+kernel_integral dynamic topography|incompressible Stokes volume|viscosity -3.581098127986799e-16
+objective dynamic topography 4.950068870523422e-16
+
+Adjoint zero-objective control gradient summary:
+control gradient file: present
+16 dynamic topography|density
+16 dynamic topography|viscosity
+integral dynamic topography|density 1.686119060557295e-13
+integral dynamic topography|viscosity 3.081487911019577e-32
+objective dynamic topography 4.950068870523422e-16
+parameterization physical property fields identity parameterization

@@ -1,0 +1,46 @@
+-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+Number of active cells: 16 (on 3 levels)
+Number of degrees of freedom: 300 (162+25+81+16+16)
+
+*** Timestep 0:  t=0 seconds, dt=0 seconds
+   Solving Stokes system (GMG)... 12+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           not available
+     Compositions min/max/mass:        0/0/0 // 0/0/0
+     Pressure at top/bottom of domain: -1.085e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 11+0 iterations.
+
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_identity_apply_update_smoke/adjoint_kernels_rank_00000.txt
+     Compositions min/max/mass:        -0.04524/0.0461/1.027e+08 // -0.2095/0.1254/-1.717e-05
+     Pressure at top/bottom of domain: -1.085e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+Termination requested by criterion: end time
+
+
++---------------------------------------------+------------+------------+
++---------------------------------+-----------+------------+------------+
++---------------------------------+-----------+------------+------------+
+
+-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+
+Adjoint identity apply-update smoke summary:
+control update file: present
+16 dynamic topography|density
+16 dynamic topography|viscosity
+integral dynamic topography|density 102737781.8919296
+integral dynamic topography|viscosity -1.71661376953125e-05
+optimizer fixed-step gradient descent update proposal
+applied field density_increment min/max -4.52370225e-02 4.61023825e-02
+applied field viscosity_increment min/max -2.09518976e-01 1.25412473e-01
+applied field density_increment nonzero yes
+applied field viscosity_increment nonzero yes

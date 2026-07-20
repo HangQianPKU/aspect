@@ -1,0 +1,48 @@
+-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+Number of active cells: 16 (on 3 levels)
+Number of degrees of freedom: 349 (162+25+81+81)
+
+*** Timestep 0:  t=0 seconds, dt=0 seconds
+   Solving Stokes system (GMG)... 16+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           not available
+     Pressure at top/bottom of domain: 1.017e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 14+0 iterations.
+
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_simple_parameterization_smoke/adjoint_kernels_rank_00000.txt
+     Pressure at top/bottom of domain: 1.017e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+Termination requested by criterion: end time
+
+
++---------------------------------------------+------------+------------+
++---------------------------------+-----------+------------+------------+
++---------------------------------+-----------+------------+------------+
+
+-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+
+Adjoint kernel smoke summary:
+kernel file: present
+16 dynamic topography|dynamic topography surface objective|density
+16 dynamic topography|dynamic topography surface objective|viscosity
+16 dynamic topography|incompressible Stokes volume|density
+16 dynamic topography|incompressible Stokes volume|viscosity
+
+Adjoint control gradient smoke summary:
+control gradient file: present
+16 dynamic topography|Reference density
+16 dynamic topography|Viscosity
+integral dynamic topography|Reference density -223820240.1433372
+integral dynamic topography|Viscosity 10410654660914.73
+parameterization Simple material model parameterization
+warning experimental material-model scalar gradients; local chain-rule plumbing only; FD diagnostic has not validated optimizer use

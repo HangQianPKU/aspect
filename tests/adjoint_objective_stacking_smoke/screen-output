@@ -1,0 +1,56 @@
+-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+Number of active cells: 16 (on 3 levels)
+Number of degrees of freedom: 349 (162+25+81+81)
+
+*** Timestep 0:  t=0 seconds, dt=0 seconds
+   Solving Stokes system (GMG)... 16+0 iterations.
+   Postprocessing:
+     Writing adjoint kernels           not available
+     Pressure at top/bottom of domain: 1.017e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+   Solving Stokes system (GMG)... 14+0 iterations.
+   Solving Stokes system (GMG)... 14+0 iterations.
+
+   Postprocessing:
+     Writing adjoint kernels           output-adjoint_objective_stacking_smoke/adjoint_kernels_rank_00000.txt
+     Pressure at top/bottom of domain: 1.017e-09 Pa, 2.309e+10 Pa
+     Computing dynamic topography
+
+Termination requested by criterion: end time
+
+
++---------------------------------------------+------------+------------+
++---------------------------------+-----------+------------+------------+
++---------------------------------+-----------+------------+------------+
+
+-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+
+Adjoint objective stacking smoke summary:
+kernel file: present
+16 dynamic topography#1|dynamic topography surface objective|density
+16 dynamic topography#1|dynamic topography surface objective|viscosity
+16 dynamic topography#1|incompressible Stokes volume|density
+16 dynamic topography#1|incompressible Stokes volume|viscosity
+16 dynamic topography#2|dynamic topography surface objective|density
+16 dynamic topography#2|dynamic topography surface objective|viscosity
+16 dynamic topography#2|incompressible Stokes volume|density
+16 dynamic topography#2|incompressible Stokes volume|viscosity
+
+Adjoint objective stacking control gradient summary:
+control gradient file: present
+16 dynamic topography#1|density
+16 dynamic topography#1|viscosity
+16 dynamic topography#2|density
+16 dynamic topography#2|viscosity
+integral dynamic topography#1|density -268889075.5246553
+integral dynamic topography#1|viscosity 1.9073486328125e-05
+integral dynamic topography#2|density -268889075.5246553
+integral dynamic topography#2|viscosity 1.9073486328125e-05
+parameterization physical property fields identity parameterization

@@ -68,12 +68,16 @@ DEAL_II_ENABLE_EXTRA_DIAGNOSTICS
 #include <aspect/adiabatic_conditions/interface.h>
 #include <aspect/particle/manager.h>
 #include <aspect/advection_field.h>
+#include <aspect/adjoint/state.h>
 
 #include <boost/iostreams/tee.hpp>
 #include <boost/iostreams/stream.hpp>
 
+#include <map>
 #include <memory>
+#include <string>
 #include <thread>
+#include <vector>
 
 namespace WorldBuilder
 {
@@ -83,6 +87,11 @@ namespace WorldBuilder
 
 namespace aspect
 {
+  namespace Adjoint
+  {
+    struct FiniteDifferenceCheckResult;
+  }
+
   template <int dim>
   class MeltHandler;
 
@@ -133,6 +142,14 @@ namespace aspect
   namespace Assemblers
   {
     template <int dim>      class Interface;
+    template <int dim>      class Manager;
+  }
+
+  namespace Adjoint
+  {
+    template <int dim>      class ControlGradientRepository;
+    template <int dim>      class ControlUpdateRepository;
+    template <int dim>      class KernelRepository;
     template <int dim>      class Manager;
   }
 
@@ -283,6 +300,42 @@ namespace aspect
        * Whether the diagnostic free-slip geoid branch is currently active.
        */
       bool is_free_slip_geoid_branch_active () const;
+
+      /**
+       * Return the adjoint kernel repository assembled by the adjoint manager.
+       */
+      const Adjoint::KernelRepository<dim> &
+      get_adjoint_kernels () const;
+
+      /**
+       * Return the objective values evaluated by the adjoint manager.
+       */
+      std::map<std::string, double>
+      get_adjoint_objective_values () const;
+
+      /**
+       * Return the control gradients assembled by the adjoint parameterization.
+       */
+      const Adjoint::ControlGradientRepository<dim> &
+      get_adjoint_control_gradients () const;
+
+      /**
+       * Return the optimizer-proposed control updates assembled by the adjoint manager.
+       */
+      const Adjoint::ControlUpdateRepository<dim> &
+      get_adjoint_control_updates () const;
+
+      /**
+       * Return finite-difference diagnostics assembled by the adjoint manager.
+       */
+      const std::vector<Adjoint::FiniteDifferenceCheckResult> &
+      get_adjoint_finite_difference_checks () const;
+
+      /**
+       * Return optimization-loop history assembled by the adjoint manager.
+       */
+      const std::vector<Adjoint::OptimizationHistoryEntry> &
+      get_adjoint_optimization_history () const;
 
     private:
 
@@ -519,6 +572,15 @@ namespace aspect
        * <code>source/simulator/solver_schemes.cc</code>.
        */
       void solve_no_advection_iterated_defect_correction_stokes ();
+
+      /**
+       * This function implements the instantaneous Stokes adjoint scheme.
+       * The actual adjoint workflow is delegated to the Adjoint manager.
+       *
+       * This function is implemented in
+       * <code>source/simulator/solver_schemes.cc</code>.
+       */
+      void solve_stokes_adjoint ();
 
       /**
        * This function implements one scheme for the various
@@ -1754,6 +1816,14 @@ namespace aspect
       Parameters<dim>                     parameters;
 
       /**
+       * Manager for the instantaneous adjoint workflow. It is stored as a
+       * persistent simulator-owned object so that adjoint states, objective
+       * contributions, kernels, and optimization history can live across
+       * repeated adjoint solves.
+       */
+      std::unique_ptr<Adjoint::Manager<dim>> adjoint_manager;
+
+      /**
        * Unique pointer for an instance of the MeltHandler. This way,
        * if we do not need the machinery for doing melt stuff, we do
        * not even allocate it.
@@ -2109,6 +2179,7 @@ namespace aspect
 
       friend class boost::serialization::access;
       friend class SimulatorAccess<dim>;
+      friend class Adjoint::Manager<dim>;
       friend class MeshDeformation::MeshDeformationHandler<dim>;
       friend class VolumeOfFluidHandler<dim>;
       friend class StokesMatrixFreeHandler<dim>;

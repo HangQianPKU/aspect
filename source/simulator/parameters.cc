@@ -20,6 +20,7 @@
 
 
 #include <aspect/simulator.h>
+#include <aspect/adjoint/objective_functional.h>
 #include <aspect/global.h>
 #include <aspect/utilities.h>
 #include <aspect/melt.h>
@@ -217,6 +218,7 @@ namespace aspect
                                                "first timestep only, single Stokes|" // deprecated: use "no Advection, single Stokes first timestep only" instead
                                                "no Advection, iterated Stokes|"
                                                "no Advection, iterated defect correction Stokes|"
+                                               "no Advection, adjoint Stokes|"
                                                "single Advection, no Stokes|"
                                                "single Advection, single Stokes|"
                                                "single Advection, iterated Stokes|"
@@ -273,6 +275,140 @@ namespace aspect
                        "The `iterated Advection and Newton Stokes' scheme iterates by alternating the solution "
                        "of the temperature, composition and Stokes equations, using Picard iterations for the "
                        "temperature and composition, and Newton iterations for the Stokes system.");
+
+    prm.enter_subsection ("Adjoint");
+    {
+      prm.declare_entry ("Mode", "kernel only",
+                         Patterns::Selection ("kernel only|optimize"),
+                         "Whether the adjoint machinery only computes kernels or also runs an outer optimization loop.");
+      prm.declare_entry ("List of objectives", "dynamic topography",
+                         Patterns::List (Patterns::Selection (::aspect::Adjoint::get_objective_functional_names<dim>())),
+                         "Comma separated list of adjoint objective functionals.");
+      prm.declare_entry ("Control parameters", "density, viscosity",
+                         Patterns::List (Patterns::Anything()),
+                         "Comma separated list of active control parameters. The selected parameterization maps physical-property kernels to these controls.");
+      prm.declare_entry ("Parameterization model", "physical property fields",
+                         Patterns::Selection ("physical property fields|material model parameters"),
+                         "Model that maps physical-property kernels to optimization/control parameters.");
+
+      prm.enter_subsection ("Optimization");
+      {
+        prm.declare_entry ("Optimizer", "gradient descent",
+                           Patterns::Selection ("gradient descent|BFGS"),
+                           "Outer-loop optimizer used when Adjoint Mode is set to optimize.");
+        prm.declare_entry ("Max iterations", "1",
+                           Patterns::Integer (0),
+                           "Maximum number of outer optimization iterations.");
+        prm.declare_entry ("Line search", "fixed",
+                           Patterns::Selection ("fixed|backtracking"),
+                           "Line search strategy for the optimizer step.");
+        prm.declare_entry ("Step length", "1.0",
+                           Patterns::Double (0),
+                           "Initial or fixed step length for the optimizer.");
+        prm.declare_entry ("Apply update", "false",
+                           Patterns::Bool (),
+                           "Whether to apply the optimizer update to the selected control parameters. The v1 adjoint path can write update proposals, but concrete apply-update implementations are still parameterization-specific.");
+      }
+      prm.leave_subsection ();
+
+      prm.enter_subsection ("Surface velocity objective");
+      {
+        prm.declare_entry ("Observation type", "all",
+                           Patterns::Selection ("none|normal|tangential|tangential rotfree|all|all rotfree"),
+                           "Rhea-style surface velocity observation type. Rot-free variants are parsed but currently require a spherical rotation projection backend and therefore report an unsupported error.");
+        prm.declare_entry ("Component", "all",
+                           Patterns::Selection ("all|normal|tangential"),
+                           "Compatibility alias for Observation type. Used only when Observation type is left at all.");
+        prm.declare_entry ("Weight type", "values",
+                           Patterns::Selection ("values|inverse area sqrt|inverse area log|inverse area linear"),
+                           "Rhea-style velocity observation weight type. The v1 implementation supports scalar values; area-based plate weights require a plate model and report an unsupported error.");
+        prm.declare_entry ("Standard deviations mm per year", "",
+                           Patterns::Anything (),
+                           "Rhea-style list of velocity observation standard deviations in mm/yr. An empty value uses the scalar Weight parameter.");
+        prm.declare_entry ("Euler pole observations", "false",
+                           Patterns::Bool (),
+                           "Rhea example option for generated Euler-pole velocity observations. Parsed for compatibility; nonzero generated observations are not implemented in v1.");
+        prm.declare_entry ("Add noise stddev", "nan",
+                           Patterns::Anything (),
+                           "Rhea example option for adding noise to generated velocity observations. Parsed for compatibility; finite values are not implemented in v1.");
+        prm.declare_entry ("Observed data", "zero",
+                           Patterns::Selection ("zero"),
+                           "Observed velocity data source. V1 supports zero observed data; file/function readers are reserved for the project benchmark layer.");
+        prm.declare_entry ("Boundary", "top",
+                           Patterns::Anything (),
+                           "Symbolic boundary name where the surface velocity objective is evaluated.");
+        prm.declare_entry ("Weight", "1.0",
+                           Patterns::Double (0),
+                           "Scalar weight multiplying the surface velocity residual.");
+      }
+      prm.leave_subsection ();
+
+      prm.enter_subsection ("Volume stress objective");
+      {
+        prm.declare_entry ("Observation type", "volume",
+                           Patterns::Selection ("none|volume|plate boundary normal|plate boundary tangential x|plate boundary tangential y|plate boundary tangential z"),
+                           "Rhea-style stress observation type. V1 implements volume stress; plate-boundary QOI types are parsed and report an unsupported error until a weak-zone mask/normal interface exists.");
+        prm.declare_entry ("QOI type list", "",
+                           Patterns::Anything (),
+                           "Rhea-style stress QOI type list, for example 100,101,102,103. Parsed for documentation and unsupported diagnostics in v1.");
+        prm.declare_entry ("QOI weakzone label file", "",
+                           Patterns::Anything (),
+                           "Rhea-style file path for active weak-zone labels used by stress QOI. Parsed but not consumed in v1.");
+        prm.declare_entry ("Observed data", "zero",
+                           Patterns::Selection ("zero"),
+                           "Observed stress data source. V1 supports zero observed stress; file/function readers are reserved for later benchmarks.");
+        prm.declare_entry ("Weight", "1.0",
+                           Patterns::Double (0),
+                           "Scalar weight multiplying the volume stress residual.");
+      }
+      prm.leave_subsection ();
+
+      prm.enter_subsection ("Viscosity observation objective");
+      {
+        prm.declare_entry ("Observation type", "none",
+                           Patterns::Selection ("none|average region|average under plates"),
+                           "Rhea-style direct viscosity observation type. This is intentionally not implemented as an ASPECT adjoint objective in v1; use material-model parameterization and property kernels instead.");
+        prm.declare_entry ("Values Pa s", "",
+                           Patterns::Anything (),
+                           "Rhea-style viscosity observation values. Parsed only for compatibility diagnostics.");
+        prm.declare_entry ("Standard deviations relative", "",
+                           Patterns::Anything (),
+                           "Rhea-style standard deviations for log-average viscosity observations. Parsed only for compatibility diagnostics.");
+      }
+      prm.leave_subsection ();
+
+      prm.enter_subsection ("Debug");
+      {
+        prm.declare_entry ("Run finite difference check", "false",
+                           Patterns::Bool (),
+                           "Whether to run a single finite-difference directional check after assembling adjoint control gradients.");
+        prm.declare_entry ("Finite difference control", "density",
+                           Patterns::Anything (),
+                           "Control parameter to perturb for the finite-difference check.");
+        prm.declare_entry ("Finite difference step", "1.0",
+                           Patterns::Double (0),
+                           "Positive perturbation size for the finite-difference check.");
+        prm.declare_entry ("Finite difference perturbation pattern", "all cells",
+                           Patterns::Anything (),
+                           "Spatial DG0 perturbation pattern used for the finite-difference check. "
+                           "Supported values are <all cells>, <random cells>, <upper half>, <right half>, <cell N>, and <each cell> for a multi-cell diagnostic sweep.");
+        prm.declare_entry ("Finite difference mode", "normal",
+                           Patterns::Selection ("normal|frozen forward|dynamic topography volume"),
+                           "Finite-difference diagnostic mode. The normal mode perturbs the control and re-solves Stokes. The frozen forward mode perturbs material properties but keeps the Stokes solution fixed, isolating direct objective/surface terms. The dynamic topography volume mode subtracts the frozen-forward finite-difference derivative from the normal finite-difference derivative and compares the result to the incompressible Stokes volume kernel term.");
+        prm.declare_entry ("Finite difference benchmark style", "aspect",
+                           Patterns::Selection ("aspect|rhea|both"),
+                           "Finite-difference benchmark family. The aspect style uses the existing single-step or per-cell diagnostic. The rhea style repeats directional checks for eps=1,1e-2,... and can run elementwise and random directions.");
+        prm.declare_entry ("Rhea finite difference trials", "5",
+                           Patterns::Integer (1),
+                           "Number of Rhea-style finite-difference step reductions. Trial k uses step * 10^(-2k).");
+        prm.declare_entry ("Rhea finite difference directions", "elementwise",
+                           Patterns::Selection ("elementwise|random|both"),
+                           "Directional perturbations used by the Rhea-style finite-difference benchmark.");
+      }
+      prm.leave_subsection ();
+
+    }
+    prm.leave_subsection ();
 
     prm.declare_entry ("Nonlinear solver failure strategy", "continue with next timestep",
                        Patterns::Selection("continue with next timestep|cut timestep size|abort program"),
@@ -1656,6 +1792,8 @@ namespace aspect
         nonlinear_solver = NonlinearSolver::no_Advection_iterated_Stokes;
       else if (solver_scheme == "no Advection, iterated defect correction Stokes")
         nonlinear_solver = NonlinearSolver::no_Advection_iterated_defect_correction_Stokes;
+      else if (solver_scheme == "no Advection, adjoint Stokes")
+        nonlinear_solver = NonlinearSolver::no_Advection_adjoint_Stokes;
       else if (solver_scheme == "single Advection, no Stokes")
         nonlinear_solver = NonlinearSolver::single_Advection_no_Stokes;
       else if (solver_scheme == "single Advection, single Stokes")
@@ -1677,6 +1815,73 @@ namespace aspect
       else
         AssertThrow (false, ExcNotImplemented());
     }
+    prm.enter_subsection ("Adjoint");
+    {
+      adjoint.mode = prm.get ("Mode");
+      adjoint.objectives = prm.get ("List of objectives");
+      adjoint.control_parameters = prm.get ("Control parameters");
+      adjoint.parameterization_model = prm.get ("Parameterization model");
+
+      prm.enter_subsection ("Optimization");
+      {
+        adjoint.optimizer = prm.get ("Optimizer");
+        adjoint.max_optimization_iterations = prm.get_integer ("Max iterations");
+        adjoint.line_search = prm.get ("Line search");
+        adjoint.step_length = prm.get_double ("Step length");
+        adjoint.apply_optimization_update = prm.get_bool ("Apply update");
+      }
+      prm.leave_subsection ();
+
+      prm.enter_subsection ("Debug");
+      {
+        adjoint.run_finite_difference_check = prm.get_bool ("Run finite difference check");
+        adjoint.finite_difference_control = prm.get ("Finite difference control");
+        adjoint.finite_difference_step = prm.get_double ("Finite difference step");
+        adjoint.finite_difference_perturbation_pattern = prm.get ("Finite difference perturbation pattern");
+        adjoint.finite_difference_mode = prm.get ("Finite difference mode");
+        adjoint.finite_difference_benchmark_style = prm.get ("Finite difference benchmark style");
+        adjoint.rhea_finite_difference_trials = prm.get_integer ("Rhea finite difference trials");
+        adjoint.rhea_finite_difference_directions = prm.get ("Rhea finite difference directions");
+      }
+      prm.leave_subsection ();
+
+      prm.enter_subsection ("Surface velocity objective");
+      {
+        adjoint.surface_velocity_observation_type = prm.get ("Observation type");
+        adjoint.surface_velocity_component = prm.get ("Component");
+        adjoint.surface_velocity_weight_type = prm.get ("Weight type");
+        adjoint.surface_velocity_stddev_mm_per_year = prm.get ("Standard deviations mm per year");
+        adjoint.surface_velocity_euler_pole = prm.get_bool ("Euler pole observations");
+        const std::string velocity_noise_stddev = prm.get ("Add noise stddev");
+        adjoint.surface_velocity_noise_stddev = (velocity_noise_stddev == "nan" || velocity_noise_stddev == "NaN"
+                                                 ? std::numeric_limits<double>::quiet_NaN()
+                                                 : Utilities::string_to_double (velocity_noise_stddev));
+        adjoint.surface_velocity_observed_data = prm.get ("Observed data");
+        adjoint.surface_velocity_boundary = prm.get ("Boundary");
+        adjoint.surface_velocity_weight = prm.get_double ("Weight");
+      }
+      prm.leave_subsection ();
+
+      prm.enter_subsection ("Volume stress objective");
+      {
+        adjoint.stress_observation_type = prm.get ("Observation type");
+        adjoint.stress_qoi_type_list = prm.get ("QOI type list");
+        adjoint.stress_qoi_weakzone_label_file = prm.get ("QOI weakzone label file");
+        adjoint.stress_observed_data = prm.get ("Observed data");
+        adjoint.volume_stress_weight = prm.get_double ("Weight");
+      }
+      prm.leave_subsection ();
+
+      prm.enter_subsection ("Viscosity observation objective");
+      {
+        adjoint.viscosity_observation_type = prm.get ("Observation type");
+        adjoint.viscosity_observation_values_pas = prm.get ("Values Pa s");
+        adjoint.viscosity_observation_stddev_relative = prm.get ("Standard deviations relative");
+      }
+      prm.leave_subsection ();
+    }
+    prm.leave_subsection ();
+
     nonlinear_solver_failure_strategy = NonlinearSolverFailureStrategy::parse(
                                           prm.get("Nonlinear solver failure strategy"));
 
